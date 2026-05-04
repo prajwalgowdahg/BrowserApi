@@ -61,10 +61,11 @@ Plans:
   3. Caller can type text into a field by describing it (e.g., "the email input") and the value appears in the field
   4. Caller can take a full-page screenshot and receive it as base64
   5. Caller can extract text content from a described element, select a dropdown option, scroll the page, and wait for a described element or page state
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- Heuristic element finder service with keyword-to-locator mapping and unit tests (FIND-01)
+- [ ] 03-02-PLAN.md -- Action route handlers (navigate, click, type, select, screenshot/full, get_text, wait, scroll) with integration tests (NAV-01/02, ACT-01..08)
 
 ### Phase 4: AI-Powered Element Finding
 **Goal**: The element finder resolves any described element through a 3-layer cascade, using AI when heuristics fail
@@ -116,7 +117,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
-| 3. Core Actions | 0/? | Not started | - |
+| 3. Core Actions | 0/2 | Not started | - |
 | 4. AI Element Finding | 0/? | Not started | - |
 | 5. Compound Actions | 0/? | Not started | - |
 | 6. Observability and Polish | 0/? | Not started | - |
