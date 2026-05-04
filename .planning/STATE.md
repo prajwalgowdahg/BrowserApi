@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-05-04T14:16:10.774Z"
-last_activity: 2026-05-04 -- Plan 03-02 completed
+status: in-progress
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-05-04T16:13:00Z"
+last_activity: 2026-05-04 -- Plan 04-01 completed
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 7
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 3 complete - all core action routes with heuristic element finding delivered
+**Current focus:** Phase 4 in progress - AI client and Layer 2/3 element finders complete, cascade controller next
 
 ## Current Position
 
-Phase: 3 of 6 (Core Actions) -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE
-Status: Phase 03 complete, ready for Phase 04 (AI Element Finding)
-Last activity: 2026-05-04 -- Plan 03-02 completed
+Phase: 4 of 6 (AI Element Finding) -- IN PROGRESS
+Plan: 1 of 2 in current phase -- COMPLETE
+Status: Plan 04-01 complete, ready for Plan 04-02 (cascade controller)
+Last activity: 2026-05-04 -- Plan 04-01 completed
 
-Progress: [██████████] 100%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -46,13 +46,14 @@ Progress: [██████████] 100%
 | 01-foundation | 1 | 4min | 4min |
 | 02-session-management | 2 | 8min | 4min |
 | 03-core-actions | 2 | 9min | 5min |
+| 04-ai-element-finding | 1/2 | 6min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 02-01 (4min), 02-02 (4min), 03-01 (3min), 03-02 (6min)
+- Last 5 plans: 02-01 (4min), 02-02 (4min), 03-01 (3min), 03-02 (6min), 04-01 (6min)
 - Trend: Consistent velocity, slight increase for integration test complexity
 
 *Updated after each plan completion*
-| Phase 03 P02 | 6min | 2 tasks | 3 files |
+| Phase 04 P01 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,10 @@ Recent decisions affecting current work:
 - Full-page screenshot returns raw base64 PNG without sharp resize, distinct from 400px thumbnail (03-02)
 - Select action matches by option label text via selectOption({ label: value }) (03-02)
 - Scroll percentage mode computes pixels from document.documentElement.scrollHeight (03-02)
+- Azure env vars validated at AI client call time, not import time, for Phase 1-3 compatibility (04-01)
+- AI element finders use response_format json_object for structured GPT-4o output with confidence threshold (04-01)
+- Layer 3 (vision) returns coordinates only -- clicking delegated to cascade controller (04-01)
+- Both AI layers catch errors and return null, enabling cascade fallthrough to next layer (04-01)
 
 ### Pending Todos
 
@@ -91,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T14:16:10.772Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-05-04T16:13:00Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
