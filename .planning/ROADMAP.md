@@ -12,7 +12,7 @@ Build a REST API that lets callers control a headless Chromium browser using nat
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Express server, config validation, browser manager, error infrastructure, response contract
+- [x] **Phase 1: Foundation** - Express server, config validation, browser manager, error infrastructure, response contract
 - [ ] **Phase 2: Session Management** - Create/destroy sessions, TTL auto-expiry, concurrency limits, isolated browser contexts, live screenshot endpoint
 - [ ] **Phase 3: Core Actions with Heuristic Finding** - Navigate, click, type, select, screenshot, get_text, wait_for, scroll with Layer 1 heuristic element finder
 - [ ] **Phase 4: AI-Powered Element Finding** - 3-layer element finder with accessibility tree analysis and GPT-4o vision fallback
@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md -- Project scaffolding, Express 5 app with error handling, health check, and integration tests
+- [x] 01-01-PLAN.md -- Project scaffolding, Express 5 app with error handling, health check, and integration tests
 
 ### Phase 2: Session Management
 **Goal**: Callers can create isolated browser sessions that persist state, auto-expire when idle, and are bounded by concurrency limits
@@ -113,7 +113,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/1 | Planning complete | - |
+| 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 0/? | Not started | - |
 | 3. Core Actions | 0/? | Not started | - |
 | 4. AI Element Finding | 0/? | Not started | - |
