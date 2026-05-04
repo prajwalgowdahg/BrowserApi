@@ -20,7 +20,7 @@
 
 ### Element Finding
 
-- [ ] **FIND-01**: Element finder uses heuristic selector mapping as Layer 1 (free, instant) — maps keywords like "email", "password", "submit" to common CSS selectors
+- [x] **FIND-01**: Element finder uses heuristic selector mapping as Layer 1 (free, instant) — maps keywords like "email", "password", "submit" to common CSS selectors
 - [ ] **FIND-02**: Element finder uses accessibility tree snapshot + Azure OpenAI as Layer 2 (fast, cheap) — sends ARIA snapshot to GPT-4o, gets back a selector with confidence score
 - [ ] **FIND-03**: Element finder uses full-page screenshot + Azure OpenAI Vision as Layer 3 (accurate, fallback) — sends screenshot to GPT-4o vision, gets back coordinates and optional selector
 - [ ] **FIND-04**: Element finder cascades through layers 1→2→3, returning the first successful match
@@ -91,7 +91,7 @@
 | DBG-01 | Phase 2 | Complete |
 | NAV-01 | Phase 3 | Pending |
 | NAV-02 | Phase 3 | Pending |
-| FIND-01 | Phase 3 | Pending |
+| FIND-01 | Phase 3 | Complete |
 | ACT-01 | Phase 3 | Pending |
 | ACT-02 | Phase 3 | Pending |
 | ACT-03 | Phase 3 | Pending |

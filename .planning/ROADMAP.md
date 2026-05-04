@@ -117,7 +117,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
-| 3. Core Actions | 0/2 | Not started | - |
+| 3. Core Actions | 1/2 | In Progress|  |
 | 4. AI Element Finding | 0/? | Not started | - |
 | 5. Compound Actions | 0/? | Not started | - |
 | 6. Observability and Polish | 0/? | Not started | - |
