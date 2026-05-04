@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-05-04T12:59:06Z"
-last_activity: 2026-05-04 -- Plan 02-01 completed
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-05-04T13:09:43.911Z"
+last_activity: 2026-05-04 -- Plan 02-02 completed
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 33
 ---
 
@@ -21,33 +21,33 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 2 - Session Management
+**Current focus:** Phase 3 - Core Actions with Heuristic Finding
 
 ## Current Position
 
-Phase: 2 of 6 (Session Management)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-05-04 -- Plan 02-01 completed
+Phase: 2 of 6 (Session Management) -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE
+Status: Phase 2 complete, ready for Phase 3
+Last activity: 2026-05-04 -- Plan 02-02 completed
 
 Progress: [###░░░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 4 min
-- Total execution time: 0.1 hours
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 1 | 4min | 4min |
-| 02-session-management | 1 | 4min | 4min |
+| 02-session-management | 2 | 8min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 02-01 (4min)
+- Last 5 plans: 01-01 (4min), 02-01 (4min), 02-02 (4min)
 - Trend: Consistent 4-minute velocity
 
 *Updated after each plan completion*
@@ -67,6 +67,9 @@ Recent decisions affecting current work:
 - Azure OpenAI fields optional in Phase 1 env schema -- required in Phase 4 (01-01)
 - BrowserManager uses module-level singleton state, not a class (02-01)
 - Timeout handles use unref() to not block process exit; sweep interval stays live (02-01)
+- Route handlers catch capacity errors (429) explicitly, delegate others to Express 5 error middleware (02-02)
+- Screenshot route calls sessionManager.touch() before capture to refresh idle timer (02-02)
+- Graceful shutdown: sessionManager.shutdown() then closeBrowser() on SIGTERM/SIGINT (02-02)
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-05-04T13:09:43.909Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

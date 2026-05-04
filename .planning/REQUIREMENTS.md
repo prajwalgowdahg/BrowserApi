@@ -54,7 +54,7 @@
 
 ### Live Debugging
 
-- [ ] **DBG-01**: Caller can get a current screenshot via GET /session/:sessionId/screenshot without performing an action
+- [x] **DBG-01**: Caller can get a current screenshot via GET /session/:sessionId/screenshot without performing an action
 
 ## v2 Requirements
 
@@ -88,7 +88,7 @@
 | SESS-03 | Phase 2 | Complete |
 | SESS-04 | Phase 2 | Complete |
 | SESS-05 | Phase 2 | Complete |
-| DBG-01 | Phase 2 | Pending |
+| DBG-01 | Phase 2 | Complete |
 | NAV-01 | Phase 3 | Pending |
 | NAV-02 | Phase 3 | Pending |
 | FIND-01 | Phase 3 | Pending |
