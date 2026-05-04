@@ -45,10 +45,11 @@ Plans:
   3. A session that receives no requests for 10 minutes is automatically cleaned up and returns an error if used again
   4. When 10 sessions already exist, an 11th creation request is rejected with a clear error
   5. Caller can GET a screenshot of the current page state without performing any action
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [x] 02-01-PLAN.md -- Session engine: BrowserManager singleton, SessionManager class with lifecycle/timers/capacity, thumbnail utility, unit tests
+- [ ] 02-02-PLAN.md -- API wiring: session CRUD routes, screenshot route, app.ts/server.ts updates, integration tests with real Chromium
 
 ### Phase 3: Core Actions with Heuristic Finding
 **Goal**: Callers can perform all 8 core browser actions using plain-English element descriptions resolved by heuristic selectors
@@ -114,7 +115,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
-| 2. Session Management | 0/? | Not started | - |
+| 2. Session Management | 1/2 | In Progress | - |
 | 3. Core Actions | 0/? | Not started | - |
 | 4. AI Element Finding | 0/? | Not started | - |
 | 5. Compound Actions | 0/? | Not started | - |
