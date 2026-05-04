@@ -76,10 +76,11 @@ Plans:
   2. When the a11y tree layer fails, the finder sends a screenshot to GPT-4o vision and gets back coordinates that click the correct element
   3. The finder cascades 1 -> 2 -> 3 automatically, returning the first successful match without redundant AI calls
   4. When all 3 layers fail, the response includes a screenshot of the current page for debugging
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md -- AI client singleton, Layer 2 (a11y tree + GPT-4o), Layer 3 (screenshot + GPT-4o Vision), prompt templates, unit tests (FIND-02, FIND-03)
+- [ ] 04-02-PLAN.md -- 3-layer cascade controller, ElementNotFoundError with diagnostics, route wiring to use cascade finder, integration tests (FIND-04, FIND-05)
 
 ### Phase 5: Compound Actions
 **Goal**: Callers can perform multi-step flows (login, fill forms, scrape data, submit) in a single API request
@@ -117,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
-| 3. Core Actions | 1/2 | In Progress|  |
-| 4. AI Element Finding | 0/? | Not started | - |
+| 3. Core Actions | 2/2 | Complete | 2026-05-04 |
+| 4. AI Element Finding | 0/2 | Planning | - |
 | 5. Compound Actions | 0/? | Not started | - |
 | 6. Observability and Polish | 0/? | Not started | - |

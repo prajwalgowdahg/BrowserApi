@@ -14,6 +14,7 @@ const envSchema = z.object({
   AZURE_OPENAI_ENDPOINT: z.string().url().optional(),
   AZURE_OPENAI_API_KEY: z.string().min(1).optional(),
   AZURE_OPENAI_DEPLOYMENT: z.string().min(1).optional(),
+  AZURE_OPENAI_API_VERSION: z.string().min(1).default('2024-07-01-preview'),
 });
 
 export const env = envSchema.parse(process.env);

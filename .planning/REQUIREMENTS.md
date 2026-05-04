@@ -15,8 +15,8 @@
 
 ### Navigation
 
-- [ ] **NAV-01**: Caller can navigate to a URL and the server waits for networkidle before responding
-- [ ] **NAV-02**: Navigation returns a thumbnail screenshot (400px wide) so caller can verify page state
+- [x] **NAV-01**: Caller can navigate to a URL and the server waits for networkidle before responding
+- [x] **NAV-02**: Navigation returns a thumbnail screenshot (400px wide) so caller can verify page state
 
 ### Element Finding
 
@@ -28,14 +28,14 @@
 
 ### Core Actions
 
-- [ ] **ACT-01**: Caller can click an element by describing it in plain English (e.g., "the login button")
-- [ ] **ACT-02**: Caller can type text into a field by describing it (e.g., "the email input")
-- [ ] **ACT-03**: Caller can select a dropdown option by describing the dropdown and providing a value
-- [ ] **ACT-04**: Caller can take a full-page screenshot and receive it as base64
-- [ ] **ACT-05**: Caller can extract text content from an element by describing it
-- [ ] **ACT-06**: Caller can wait for a described element, navigation, or network idle state
-- [ ] **ACT-07**: Caller can scroll the page by direction (up/down) and amount (pixels or percentage)
-- [ ] **ACT-08**: Every action returns a thumbnail screenshot (400px wide) for verification
+- [x] **ACT-01**: Caller can click an element by describing it in plain English (e.g., "the login button")
+- [x] **ACT-02**: Caller can type text into a field by describing it (e.g., "the email input")
+- [x] **ACT-03**: Caller can select a dropdown option by describing the dropdown and providing a value
+- [x] **ACT-04**: Caller can take a full-page screenshot and receive it as base64
+- [x] **ACT-05**: Caller can extract text content from an element by describing it
+- [x] **ACT-06**: Caller can wait for a described element, navigation, or network idle state
+- [x] **ACT-07**: Caller can scroll the page by direction (up/down) and amount (pixels or percentage)
+- [x] **ACT-08**: Every action returns a thumbnail screenshot (400px wide) for verification
 
 ### Compound Actions
 
@@ -89,17 +89,17 @@
 | SESS-04 | Phase 2 | Complete |
 | SESS-05 | Phase 2 | Complete |
 | DBG-01 | Phase 2 | Complete |
-| NAV-01 | Phase 3 | Pending |
-| NAV-02 | Phase 3 | Pending |
+| NAV-01 | Phase 3 | Complete |
+| NAV-02 | Phase 3 | Complete |
 | FIND-01 | Phase 3 | Complete |
-| ACT-01 | Phase 3 | Pending |
-| ACT-02 | Phase 3 | Pending |
-| ACT-03 | Phase 3 | Pending |
-| ACT-04 | Phase 3 | Pending |
-| ACT-05 | Phase 3 | Pending |
-| ACT-06 | Phase 3 | Pending |
-| ACT-07 | Phase 3 | Pending |
-| ACT-08 | Phase 3 | Pending |
+| ACT-01 | Phase 3 | Complete |
+| ACT-02 | Phase 3 | Complete |
+| ACT-03 | Phase 3 | Complete |
+| ACT-04 | Phase 3 | Complete |
+| ACT-05 | Phase 3 | Complete |
+| ACT-06 | Phase 3 | Complete |
+| ACT-07 | Phase 3 | Complete |
+| ACT-08 | Phase 3 | Complete |
 | FIND-02 | Phase 4 | Pending |
 | FIND-03 | Phase 4 | Pending |
 | FIND-04 | Phase 4 | Pending |
