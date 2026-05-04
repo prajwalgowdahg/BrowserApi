@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { success, error } from '../utils/response.js';
 import { sessionManager } from '../services/sessionManager.js';
 import { screenshotPage } from '../utils/thumbnails.js';
-import { findElement } from '../services/elementFinder.js';
+import { findElementWithAI } from '../services/cascadeFinder.js';
 
 export const actionsRouter = Router();
 
@@ -38,10 +38,15 @@ actionsRouter.post('/:sessionId/click', async (req, res, next) => {
     const { description } = req.body;
     if (!description) return error(res, 'Missing required field: description', 400);
 
-    const { locator, strategy } = await findElement(session.page, description);
-    await locator.click();
+    const result = await findElementWithAI(session.page, description);
+    // Vision layer returns coordinates -- use mouse.click for pixel-accurate clicking
+    if ('clickedAt' in result && result.clickedAt) {
+      await session.page.mouse.click(result.clickedAt.x, result.clickedAt.y);
+    } else {
+      await result.locator.click();
+    }
     const screenshot = await screenshotPage(session.page);
-    return success(res, { screenshot, strategy });
+    return success(res, { screenshot, strategy: result.strategy });
   } catch (err) {
     next(err);
   }
@@ -60,7 +65,7 @@ actionsRouter.post('/:sessionId/type', async (req, res, next) => {
     if (!description) return error(res, 'Missing required field: description', 400);
     if (!value) return error(res, 'Missing required field: value', 400);
 
-    const { locator, strategy } = await findElement(session.page, description);
+    const { locator, strategy } = await findElementWithAI(session.page, description);
     await locator.fill(value);
     const screenshot = await screenshotPage(session.page);
     return success(res, { screenshot, strategy });
@@ -82,7 +87,7 @@ actionsRouter.post('/:sessionId/select', async (req, res, next) => {
     if (!description) return error(res, 'Missing required field: description', 400);
     if (!value) return error(res, 'Missing required field: value', 400);
 
-    const { locator, strategy } = await findElement(session.page, description);
+    const { locator, strategy } = await findElementWithAI(session.page, description);
     await locator.selectOption({ label: value });
     const screenshot = await screenshotPage(session.page);
     return success(res, { screenshot, strategy });
@@ -119,7 +124,7 @@ actionsRouter.post('/:sessionId/get_text', async (req, res, next) => {
     const { description } = req.body;
     if (!description) return error(res, 'Missing required field: description', 400);
 
-    const { locator, strategy } = await findElement(session.page, description);
+    const { locator, strategy } = await findElementWithAI(session.page, description);
     const text = await locator.innerText();
     const screenshot = await screenshotPage(session.page);
     return success(res, { text, screenshot, strategy });
@@ -142,7 +147,7 @@ actionsRouter.post('/:sessionId/wait', async (req, res, next) => {
     switch (waitType) {
       case 'element': {
         if (!description) return error(res, 'Missing required field: description for element wait', 400);
-        const { locator } = await findElement(session.page, description);
+        const { locator } = await findElementWithAI(session.page, description);
         await locator.waitFor({ state: 'visible', timeout });
         break;
       }
