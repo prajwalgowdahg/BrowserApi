@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-05-04T16:13:00Z"
-last_activity: 2026-05-04 -- Plan 04-01 completed
+status: completed
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-05-04T16:21:39Z"
+last_activity: 2026-05-04 -- Plan 04-02 completed, Phase 4 done
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 7
-  completed_plans: 6
-  percent: 86
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 4 in progress - AI client and Layer 2/3 element finders complete, cascade controller next
+**Current focus:** Phase 4 complete -- 3-layer cascade controller integrated into all action routes
 
 ## Current Position
 
-Phase: 4 of 6 (AI Element Finding) -- IN PROGRESS
-Plan: 1 of 2 in current phase -- COMPLETE
-Status: Plan 04-01 complete, ready for Plan 04-02 (cascade controller)
-Last activity: 2026-05-04 -- Plan 04-01 completed
+Phase: 4 of 6 (AI Element Finding) -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE
+Status: Phase 4 complete, all 7 plans done (100%)
+Last activity: 2026-05-04 -- Plan 04-02 completed, Phase 4 done
 
-Progress: [█████████░] 86%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 7
 - Average duration: 4 min
-- Total execution time: 0.4 hours
+- Total execution time: 0.5 hours
 
 **By Phase:**
 
@@ -46,14 +46,15 @@ Progress: [█████████░] 86%
 | 01-foundation | 1 | 4min | 4min |
 | 02-session-management | 2 | 8min | 4min |
 | 03-core-actions | 2 | 9min | 5min |
-| 04-ai-element-finding | 1/2 | 6min | 6min |
+| 04-ai-element-finding | 2/2 | 10min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (4min), 02-02 (4min), 03-01 (3min), 03-02 (6min), 04-01 (6min)
-- Trend: Consistent velocity, slight increase for integration test complexity
+- Last 5 plans: 03-01 (3min), 03-02 (6min), 04-01 (6min), 04-02 (4min)
+- Trend: Consistent velocity, AI integration adds moderate overhead
 
 *Updated after each plan completion*
 | Phase 04 P01 | 6min | 2 tasks | 6 files |
+| Phase 04 P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - AI element finders use response_format json_object for structured GPT-4o output with confidence threshold (04-01)
 - Layer 3 (vision) returns coordinates only -- clicking delegated to cascade controller (04-01)
 - Both AI layers catch errors and return null, enabling cascade fallthrough to next layer (04-01)
+- Cascade accepts any non-null AI result -- confidence filtering already done inside findByA11yTree/findByVision (04-02)
+- Vision coordinate clicks use page.mouse.click(x,y) in click route, locator.click() for all other layers (04-02)
+- ElementNotFoundError captures screenshot only when all layers fail, not per-attempt (04-02)
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T16:13:00Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-05-04T16:21:39Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None

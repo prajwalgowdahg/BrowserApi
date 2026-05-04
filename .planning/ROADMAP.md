@@ -79,7 +79,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md -- AI client singleton, Layer 2 (a11y tree + GPT-4o), Layer 3 (screenshot + GPT-4o Vision), prompt templates, unit tests (FIND-02, FIND-03)
+- [x] 04-01-PLAN.md -- AI client singleton, Layer 2 (a11y tree + GPT-4o), Layer 3 (screenshot + GPT-4o Vision), prompt templates, unit tests (FIND-02, FIND-03)
 - [ ] 04-02-PLAN.md -- 3-layer cascade controller, ElementNotFoundError with diagnostics, route wiring to use cascade finder, integration tests (FIND-04, FIND-05)
 
 ### Phase 5: Compound Actions
@@ -119,6 +119,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
 | 3. Core Actions | 2/2 | Complete | 2026-05-04 |
-| 4. AI Element Finding | 0/2 | Planning | - |
+| 4. AI Element Finding | 1/2 | In Progress | - |
 | 5. Compound Actions | 0/? | Not started | - |
 | 6. Observability and Polish | 0/? | Not started | - |
