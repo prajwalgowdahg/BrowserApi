@@ -91,10 +91,11 @@ Plans:
   2. Caller can fill a form in one request by providing an array of {description, value} pairs; all fields are populated
   3. Caller can scrape structured data by providing field-to-description mappings and receives a JSON object with extracted values
   4. Caller can submit the current form and receives confirmation with a screenshot of the result
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01-PLAN.md -- Compounds router with login (COMP-01) and fill_form (COMP-02) endpoints, app.ts registration, integration tests
+- [ ] 05-02-PLAN.md -- Scrape (COMP-03) and submit_form (COMP-04) endpoints, integration tests
 
 ### Phase 6: Observability and Error Polish
 **Goal**: Every action produces structured logs, every error includes a diagnostic screenshot, and the API surface is consistent and debuggable
@@ -119,6 +120,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Foundation | 1/1 | Complete | 2026-05-04 |
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
 | 3. Core Actions | 2/2 | Complete | 2026-05-04 |
-| 4. AI Element Finding | 1/2 | In Progress | - |
-| 5. Compound Actions | 0/? | Not started | - |
+| 4. AI Element Finding | 2/2 | Complete | 2026-05-04 |
+| 5. Compound Actions | 0/2 | Not started | - |
 | 6. Observability and Polish | 0/? | Not started | - |
