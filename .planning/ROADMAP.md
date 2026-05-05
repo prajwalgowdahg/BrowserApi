@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Session Management** - Create/destroy sessions, TTL auto-expiry, concurrency limits, isolated browser contexts, live screenshot endpoint (completed 2026-05-04)
 - [ ] **Phase 3: Core Actions with Heuristic Finding** - Navigate, click, type, select, screenshot, get_text, wait_for, scroll with Layer 1 heuristic element finder
 - [ ] **Phase 4: AI-Powered Element Finding** - 3-layer element finder with accessibility tree analysis and GPT-4o vision fallback
-- [ ] **Phase 5: Compound Actions** - Login, fill_form, scrape, and submit_form in single requests
+- [ ] **Phase 5: Compound Actions** - Login, fill_form, scrape, and submit_form in single requests (completed 2026-05-05)
 - [ ] **Phase 6: Observability and Error Polish** - Consistent error responses with screenshots, action logging with session correlation
 
 ## Phase Details
@@ -94,8 +94,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md -- Compounds router with login (COMP-01) and fill_form (COMP-02) endpoints, app.ts registration, integration tests
-- [ ] 05-02-PLAN.md -- Scrape (COMP-03) and submit_form (COMP-04) endpoints, integration tests
+- [x] 05-01-PLAN.md -- Compounds router with login (COMP-01) and fill_form (COMP-02) endpoints, app.ts registration, integration tests
+- [x] 05-02-PLAN.md -- Scrape (COMP-03) and submit_form (COMP-04) endpoints, integration tests
 
 ### Phase 6: Observability and Error Polish
 **Goal**: Every action produces structured logs, every error includes a diagnostic screenshot, and the API surface is consistent and debuggable
@@ -121,5 +121,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Session Management | 2/2 | Complete   | 2026-05-04 |
 | 3. Core Actions | 2/2 | Complete | 2026-05-04 |
 | 4. AI Element Finding | 2/2 | Complete | 2026-05-04 |
-| 5. Compound Actions | 0/2 | Not started | - |
+| 5. Compound Actions | 2/2 | Complete | 2026-05-05 |
 | 6. Observability and Polish | 0/? | Not started | - |

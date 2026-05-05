@@ -41,8 +41,8 @@
 
 - [x] **COMP-01**: Caller can perform a login flow in a single request (navigate to URL, type username, type password, click submit)
 - [x] **COMP-02**: Caller can fill a form in a single request by providing an array of {description, value} field pairs
-- [ ] **COMP-03**: Caller can scrape structured data by providing a schema mapping field names to element descriptions
-- [ ] **COMP-04**: Caller can submit the current form by clicking the submit button
+- [x] **COMP-03**: Caller can scrape structured data by providing a schema mapping field names to element descriptions
+- [x] **COMP-04**: Caller can submit the current form by clicking the submit button
 
 ### Error Handling & Logging
 
@@ -106,8 +106,8 @@
 | FIND-05 | Phase 4 | Complete |
 | COMP-01 | Phase 5 | Complete |
 | COMP-02 | Phase 5 | Complete |
-| COMP-03 | Phase 5 | Pending |
-| COMP-04 | Phase 5 | Pending |
+| COMP-03 | Phase 5 | Complete |
+| COMP-04 | Phase 5 | Complete |
 | ERR-02 | Phase 6 | Pending |
 | LOG-01 | Phase 6 | Pending |
 

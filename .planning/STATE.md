@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-05-05T13:11:45Z"
-last_activity: 2026-05-05 -- Plan 05-01 completed, compound actions login + fill_form
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-05-05T13:20:46Z"
+last_activity: 2026-05-05 -- Plan 05-02 completed, scrape + submit_form, Phase 5 COMPLETE
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 5 (Compound Actions) -- login flow and fill_form implemented
+**Current focus:** Phase 5 (Compound Actions) COMPLETE -- all 4 compound actions implemented, ready for Phase 6
 
 ## Current Position
 
-Phase: 5 of 6 (Compound Actions) -- IN PROGRESS
-Plan: 1 of 2 in current phase -- COMPLETE
-Status: Plan 05-01 complete, 8 of 9 total plans done (89%)
-Last activity: 2026-05-05 -- Plan 05-01 completed, compound actions login + fill_form
+Phase: 5 of 6 (Compound Actions) -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE
+Status: All 9 plans complete (100%), Phase 6 (Observability) next
+Last activity: 2026-05-05 -- Plan 05-02 completed, scrape + submit_form, Phase 5 COMPLETE
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 4 min
-- Total execution time: 0.6 hours
+- Total execution time: 0.7 hours
 
 **By Phase:**
 
@@ -47,16 +47,17 @@ Progress: [█████████░] 89%
 | 02-session-management | 2 | 8min | 4min |
 | 03-core-actions | 2 | 9min | 5min |
 | 04-ai-element-finding | 2/2 | 10min | 5min |
-| 05-compound-actions | 1/2 | 3min | 3min |
+| 05-compound-actions | 2/2 | 7min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (6min), 04-01 (6min), 04-02 (4min), 05-01 (3min)
-- Trend: Consistent velocity, compound actions faster due to pure composition (no new tech)
+- Last 5 plans: 04-01 (6min), 04-02 (4min), 05-01 (3min), 05-02 (4min)
+- Trend: Consistent velocity, all phases on track
 
 *Updated after each plan completion*
 | Phase 04 P01 | 6min | 2 tasks | 6 files |
 | Phase 04 P02 | 4min | 2 tasks | 3 files |
 | Phase 05 P01 | 3min | 2 tasks | 3 files |
+| Phase 05 P02 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - Login defaults element descriptions with optional overrides for custom forms (05-01)
 - Fill form uses Zod safeParse for array-of-objects validation with semicolon-joined errors (05-01)
 - Both compound endpoints throw on first failure, no partial failure reporting (05-01)
+- Scrape uses inline validation (not Zod) for dynamic Record<string,string> schema with per-field error messages (05-02)
+- Submit form defaults to "the submit button", handles vision coordinate clicks, waits for networkidle (05-02)
+- Scrape extracts innerText from found elements for structured data output with field-level strategy tracking (05-02)
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T13:11:45Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-05-05T13:20:46Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
