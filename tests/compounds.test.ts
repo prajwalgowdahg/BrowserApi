@@ -11,7 +11,7 @@ const LOGIN_FORM_HTML = `data:text/html,${encodeURIComponent(
     '<input type="email" id="username" placeholder="Enter your email">' +
     '<label for="password">Password</label>' +
     '<input type="password" id="password" placeholder="Enter password">' +
-    '<button type="button" id="signInBtn">Sign In</button>' +
+    '<button type="button" id="signInBtn">Submit</button>' +
     '</form>' +
     '<h1 id="result" style="display:none">Logged In</h1>' +
     '<script>' +
