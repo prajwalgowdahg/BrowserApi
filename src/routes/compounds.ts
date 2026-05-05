@@ -107,3 +107,79 @@ compoundsRouter.post('/:sessionId/fill_form', async (req, res, next) => {
     next(err);
   }
 });
+
+// ---------------------------------------------------------------------------
+// COMP-03: Scrape (structured data extraction)
+// ---------------------------------------------------------------------------
+
+compoundsRouter.post('/:sessionId/scrape', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    sessionManager.touch(sessionId);
+
+    const { schema } = req.body;
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema) || Object.keys(schema).length === 0) {
+      return error(res, 'Missing required field: schema (non-empty object mapping field names to element descriptions)', 400);
+    }
+    for (const [key, val] of Object.entries(schema)) {
+      if (typeof val !== 'string') {
+        return error(res, `Schema field "${key}" must be a string description`, 400);
+      }
+    }
+
+    const data: Record<string, string> = {};
+    const fields: Array<{ field: string; strategy: string }> = [];
+
+    for (const [fieldName, description] of Object.entries(schema)) {
+      const result = await findElementWithAI(session.page, description as string);
+      const text = await result.locator.innerText();
+      data[fieldName] = text;
+      fields.push({ field: fieldName, strategy: result.strategy });
+    }
+
+    const screenshot = await screenshotPage(session.page);
+    return success(res, { data, screenshot, fields });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// COMP-04: Submit form
+// ---------------------------------------------------------------------------
+
+compoundsRouter.post('/:sessionId/submit_form', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    sessionManager.touch(sessionId);
+
+    const description = req.body.description ?? 'the submit button';
+
+    const result = await findElementWithAI(session.page, description);
+
+    // Handle vision coordinate clicks vs locator clicks
+    if ('clickedAt' in result && result.clickedAt) {
+      await session.page.mouse.click(result.clickedAt.x, result.clickedAt.y);
+    } else {
+      await result.locator.click();
+    }
+
+    // Wait for page to settle after form submission
+    await session.page.waitForLoadState('networkidle', { timeout: 10000 });
+
+    const screenshot = await screenshotPage(session.page);
+    return success(res, {
+      screenshot,
+      url: session.page.url(),
+      strategy: result.strategy,
+    });
+  } catch (err) {
+    next(err);
+  }
+});

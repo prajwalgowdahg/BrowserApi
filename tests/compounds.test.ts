@@ -234,5 +234,164 @@ describe(
         expect(res.body.success).toBe(false);
       });
     });
+
+    // --- COMP-03: Scrape endpoint ---
+
+    describe('POST /:sessionId/scrape', () => {
+      it('returns 200 with structured data extracted from described elements', async () => {
+        const sessionId = await createSession();
+
+        // Navigate to a product page
+        const productUrl = `data:text/html,${encodeURIComponent(
+          '<div>' +
+            '<h1>Widget Pro</h1>' +
+            '<p class="price">$29.99</p>' +
+            '<p class="desc">High quality widget</p>' +
+            '</div>',
+        )}`;
+        await request(app).post(`/sessions/${sessionId}/navigate`).send({ url: productUrl });
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/scrape`)
+          .send({ schema: { title: 'Widget Pro', price: '$29.99' } });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.data.title).toBe('Widget Pro');
+        expect(res.body.data.data.price).toBe('$29.99');
+        expect(typeof res.body.data.screenshot).toBe('string');
+        expect(Array.isArray(res.body.data.fields)).toBe(true);
+        expect(res.body.data.fields).toHaveLength(2);
+        for (const field of res.body.data.fields) {
+          expect(typeof field.field).toBe('string');
+          expect(typeof field.strategy).toBe('string');
+        }
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 400 for empty schema', async () => {
+        const sessionId = await createSession();
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/scrape`)
+          .send({ schema: {} });
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 400 for missing schema', async () => {
+        const sessionId = await createSession();
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/scrape`)
+          .send({});
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 400 for non-string schema value', async () => {
+        const sessionId = await createSession();
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/scrape`)
+          .send({ schema: { a: 123 } });
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 404 for unknown sessionId', async () => {
+        const fakeId = '00000000-0000-0000-0000-000000000000';
+
+        const res = await request(app)
+          .post(`/sessions/${fakeId}/scrape`)
+          .send({ schema: { title: 'Product Name' } });
+
+        expect(res.status).toBe(404);
+        expect(res.body.success).toBe(false);
+      });
+    });
+
+    // --- COMP-04: Submit form endpoint ---
+
+    describe('POST /:sessionId/submit_form', () => {
+      it('returns 200 with screenshot, url, and strategy on successful submit', async () => {
+        const sessionId = await createSession();
+
+        const formUrl = `data:text/html,${encodeURIComponent(
+          '<form id="myForm">' +
+            '<label for="name">Name</label>' +
+            '<input id="name" type="text">' +
+            '<button type="button" id="submitBtn">Submit</button>' +
+            '</form>' +
+            '<div id="result" style="display:none">Form submitted</div>' +
+            '<script>' +
+            'document.getElementById("submitBtn").addEventListener("click",function(){' +
+            'document.getElementById("result").style.display="block"' +
+            '})</script>',
+        )}`;
+        await request(app).post(`/sessions/${sessionId}/navigate`).send({ url: formUrl });
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/submit_form`)
+          .send({ description: 'the submit button' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(typeof res.body.data.screenshot).toBe('string');
+        expect(typeof res.body.data.url).toBe('string');
+        expect(typeof res.body.data.strategy).toBe('string');
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 200 using default description when not provided', async () => {
+        const sessionId = await createSession();
+
+        const formUrl = `data:text/html,${encodeURIComponent(
+          '<form id="myForm">' +
+            '<label for="name">Name</label>' +
+            '<input id="name" type="text">' +
+            '<button type="button" id="submitBtn">Submit</button>' +
+            '</form>' +
+            '<div id="result" style="display:none">Form submitted</div>' +
+            '<script>' +
+            'document.getElementById("submitBtn").addEventListener("click",function(){' +
+            'document.getElementById("result").style.display="block"' +
+            '})</script>',
+        )}`;
+        await request(app).post(`/sessions/${sessionId}/navigate`).send({ url: formUrl });
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/submit_form`)
+          .send({});
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(typeof res.body.data.screenshot).toBe('string');
+
+        await sessionManager.delete(sessionId);
+      });
+
+      it('returns 404 for unknown sessionId', async () => {
+        const fakeId = '00000000-0000-0000-0000-000000000000';
+
+        const res = await request(app)
+          .post(`/sessions/${fakeId}/submit_form`)
+          .send({ description: 'the submit button' });
+
+        expect(res.status).toBe(404);
+        expect(res.body.success).toBe(false);
+      });
+    });
   },
 );
