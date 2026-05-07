@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-05-07T03:36:13Z"
-last_activity: 2026-05-07 -- Plan 06-01 completed, error enrichment + ActionLogService
+status: complete
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-05-07T03:46:57Z"
+last_activity: 2026-05-07 -- Plan 06-02 completed, action logging wired into all route handlers
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -21,38 +21,38 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 6 (Observability and Error Polish) -- Plan 1 of 2 complete, ActionLogService + error enrichment done
+**Current focus:** All 6 phases complete -- v1.0 milestone achieved
 
 ## Current Position
 
-Phase: 6 of 6 (Observability and Error Polish) -- IN PROGRESS
-Plan: 1 of 2 in current phase -- COMPLETE
-Status: 10 of 11 plans complete (91%), Plan 06-02 next
-Last activity: 2026-05-07 -- Plan 06-01 completed, error enrichment + ActionLogService
+Phase: 6 of 6 (Observability and Error Polish) -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE
+Status: 11 of 11 plans complete (100%), milestone complete
+Last activity: 2026-05-07 -- Plan 06-02 completed, action logging wired into all route handlers
 
-Progress: [█████████ ] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 4 min
-- Total execution time: 0.8 hours
+- Total execution time: 0.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1 | 4min | 4min |
-| 02-session-management | 2 | 8min | 4min |
-| 03-core-actions | 2 | 9min | 5min |
+| 01-foundation | 1/1 | 4min | 4min |
+| 02-session-management | 2/2 | 8min | 4min |
+| 03-core-actions | 2/2 | 9min | 5min |
 | 04-ai-element-finding | 2/2 | 10min | 5min |
 | 05-compound-actions | 2/2 | 7min | 4min |
-| 06-observability | 1/2 | 5min | 5min |
+| 06-observability | 2/2 | 10min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (4min), 05-01 (3min), 05-02 (4min), 06-01 (5min)
-- Trend: Consistent velocity, all phases on track
+- Last 5 plans: 05-01 (3min), 05-02 (4min), 06-01 (5min), 06-02 (5min)
+- Trend: Consistent velocity, all phases complete
 
 *Updated after each plan completion*
 | Phase 04 P01 | 6min | 2 tasks | 6 files |
@@ -60,6 +60,7 @@ Progress: [█████████ ] 91%
 | Phase 05 P01 | 3min | 2 tasks | 3 files |
 | Phase 05 P02 | 4min | 2 tasks | 2 files |
 | Phase 06 P01 | 5min | 2 tasks | 6 files |
+| Phase 06 P02 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,9 @@ Recent decisions affecting current work:
 - Screenshot enrichment in errorHandler via instanceof ElementNotFoundError, not in response utility (06-01)
 - ActionLogService uses in-memory Map per session with append/getLogs/clear; singleton exported for route handler use (06-01)
 - SessionManager.destroy() clears action logs before removing session to keep session ID valid during cleanup (06-01)
+- All 15 route handlers log success/fail via actionLogService.append; compound actions logged as single entries (06-02)
+- GET /sessions/:sessionId/logs endpoint returns full action history; health check is NOT logged (06-02)
+- Catch blocks use req.params.sessionId to avoid scope issues; durationMs: 0 fallback when timing unavailable (06-02)
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-07T03:36:13Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-05-07T03:46:57Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

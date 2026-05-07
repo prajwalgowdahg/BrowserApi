@@ -50,7 +50,7 @@
 - [x] **ERR-02**: On element-not-found, response includes a screenshot of the current page state
 - [x] **ERR-03**: Server never crashes — all route handlers wrapped in try/catch
 - [x] **ERR-04**: Express async error handling prevents silent swallowed errors in async route handlers
-- [ ] **LOG-01**: Every action is logged with timestamp, sessionId, action name, and success/fail
+- [x] **LOG-01**: Every action is logged with timestamp, sessionId, action name, and success/fail
 
 ### Live Debugging
 
