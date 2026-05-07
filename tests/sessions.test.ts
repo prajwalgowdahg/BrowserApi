@@ -136,5 +136,69 @@ describe(
       // Cleanup
       await sessionManager.delete(sessionId);
     });
+
+    it('GET /sessions/:sessionId/logs returns action history', async () => {
+      // Create a session
+      const createRes = await request(app).post('/sessions');
+      expect(createRes.status).toBe(201);
+      const sessionId = createRes.body.data.sessionId;
+
+      // Perform a navigate action using data URL
+      const navRes = await request(app)
+        .post(`/sessions/${sessionId}/navigate`)
+        .send({ url: 'data:text/html,<h1>Test</h1>' });
+      expect(navRes.status).toBe(200);
+
+      // Get logs
+      const logsRes = await request(app).get(`/sessions/${sessionId}/logs`);
+      expect(logsRes.status).toBe(200);
+      expect(logsRes.body.success).toBe(true);
+      expect(logsRes.body.data.logs).toBeDefined();
+      expect(Array.isArray(logsRes.body.data.logs)).toBe(true);
+
+      // Should have at least session.create + navigate entries
+      const logs = logsRes.body.data.logs;
+      expect(logs.length).toBeGreaterThanOrEqual(2);
+
+      // Verify navigate entry
+      const navEntry = logs.find((l: any) => l.action === 'navigate');
+      expect(navEntry).toBeDefined();
+      expect(navEntry.status).toBe('success');
+      expect(navEntry.sessionId).toBe(sessionId);
+      expect(navEntry.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+      // Cleanup
+      await sessionManager.delete(sessionId);
+    });
+
+    it('GET /sessions/:sessionId/logs returns 404 for unknown session', async () => {
+      const res = await request(app).get(
+        '/sessions/00000000-0000-0000-0000-000000000000/logs',
+      );
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toBe('Session not found');
+    });
+
+    it('Logs include session.create entry', async () => {
+      // Create a session
+      const createRes = await request(app).post('/sessions');
+      expect(createRes.status).toBe(201);
+      const sessionId = createRes.body.data.sessionId;
+
+      // Get logs immediately after creation
+      const logsRes = await request(app).get(`/sessions/${sessionId}/logs`);
+      expect(logsRes.status).toBe(200);
+
+      const logs = logsRes.body.data.logs;
+      expect(logs.length).toBeGreaterThanOrEqual(1);
+
+      // First entry should be session.create
+      expect(logs[0].action).toBe('session.create');
+      expect(logs[0].status).toBe('success');
+
+      // Cleanup
+      await sessionManager.delete(sessionId);
+    });
   },
 );
