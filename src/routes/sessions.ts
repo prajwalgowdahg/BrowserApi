@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { success, error } from '../utils/response.js';
 import { sessionManager } from '../services/sessionManager.js';
+import { actionLogService } from '../services/actionLogService.js';
 
 export const sessionRouter = Router();
 
 sessionRouter.post('/', async (req, res, next) => {
   try {
     const session = await sessionManager.create();
+    actionLogService.append(session.id, { action: 'session.create', status: 'success' });
     return success(res, { sessionId: session.id }, 201);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -25,6 +27,18 @@ sessionRouter.delete('/:sessionId', async (req, res) => {
     return error(res, 'Session not found', 404);
   }
 
+  actionLogService.append(sessionId, { action: 'session.delete', status: 'success' });
   await sessionManager.delete(sessionId);
   return success(res, { deleted: true });
+});
+
+sessionRouter.get('/:sessionId/logs', async (req, res) => {
+  const { sessionId } = req.params;
+  const session = sessionManager.get(sessionId);
+
+  if (!session) {
+    return error(res, 'Session not found', 404);
+  }
+
+  return success(res, { logs: actionLogService.getLogs(sessionId) });
 });

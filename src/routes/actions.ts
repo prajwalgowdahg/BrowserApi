@@ -3,6 +3,7 @@ import { success, error } from '../utils/response.js';
 import { sessionManager } from '../services/sessionManager.js';
 import { screenshotPage } from '../utils/thumbnails.js';
 import { findElementWithAI } from '../services/cascadeFinder.js';
+import { actionLogService } from '../services/actionLogService.js';
 
 export const actionsRouter = Router();
 
@@ -13,6 +14,7 @@ actionsRouter.post('/:sessionId/navigate', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { url } = req.body;
@@ -20,8 +22,11 @@ actionsRouter.post('/:sessionId/navigate', async (req, res, next) => {
 
     await session.page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'navigate', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, url: session.page.url() });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'navigate', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -33,6 +38,7 @@ actionsRouter.post('/:sessionId/click', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { description } = req.body;
@@ -46,8 +52,11 @@ actionsRouter.post('/:sessionId/click', async (req, res, next) => {
       await result.locator.click();
     }
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'click', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, strategy: result.strategy });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'click', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -59,6 +68,7 @@ actionsRouter.post('/:sessionId/type', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { description, value } = req.body;
@@ -68,8 +78,11 @@ actionsRouter.post('/:sessionId/type', async (req, res, next) => {
     const { locator, strategy } = await findElementWithAI(session.page, description);
     await locator.fill(value);
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'type', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, strategy });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'type', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -81,6 +94,7 @@ actionsRouter.post('/:sessionId/select', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { description, value } = req.body;
@@ -90,8 +104,11 @@ actionsRouter.post('/:sessionId/select', async (req, res, next) => {
     const { locator, strategy } = await findElementWithAI(session.page, description);
     await locator.selectOption({ label: value });
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'select', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, strategy });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'select', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -103,11 +120,15 @@ actionsRouter.post('/:sessionId/screenshot/full', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const buffer = await session.page.screenshot({ fullPage: true, type: 'png' });
+    actionLogService.append(sessionId, { action: 'screenshot_full', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot: buffer.toString('base64') });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'screenshot_full', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -119,6 +140,7 @@ actionsRouter.post('/:sessionId/get_text', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { description } = req.body;
@@ -127,8 +149,11 @@ actionsRouter.post('/:sessionId/get_text', async (req, res, next) => {
     const { locator, strategy } = await findElementWithAI(session.page, description);
     const text = await locator.innerText();
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'get_text', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { text, screenshot, strategy });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'get_text', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -140,6 +165,7 @@ actionsRouter.post('/:sessionId/wait', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { description, waitType = 'element', timeout = 10000 } = req.body;
@@ -162,8 +188,11 @@ actionsRouter.post('/:sessionId/wait', async (req, res, next) => {
     }
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'wait', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, waited: waitType });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'wait', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -175,6 +204,7 @@ actionsRouter.post('/:sessionId/scroll', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const direction = req.body.direction ?? 'down';
@@ -194,8 +224,11 @@ actionsRouter.post('/:sessionId/scroll', async (req, res, next) => {
     await session.page.waitForTimeout(300);
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'scroll', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, scrolled: { direction, amount, unit } });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'scroll', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });

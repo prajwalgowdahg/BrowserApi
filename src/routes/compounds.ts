@@ -4,6 +4,7 @@ import { success, error } from '../utils/response.js';
 import { sessionManager } from '../services/sessionManager.js';
 import { screenshotPage } from '../utils/thumbnails.js';
 import { findElementWithAI } from '../services/cascadeFinder.js';
+import { actionLogService } from '../services/actionLogService.js';
 
 export const compoundsRouter = Router();
 
@@ -17,6 +18,7 @@ compoundsRouter.post('/:sessionId/login', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { url, username, password } = req.body;
@@ -51,6 +53,7 @@ compoundsRouter.post('/:sessionId/login', async (req, res, next) => {
     await session.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'login', status: 'success', durationMs: Date.now() - startTime });
     return success(res, {
       screenshot,
       url: session.page.url(),
@@ -62,6 +65,8 @@ compoundsRouter.post('/:sessionId/login', async (req, res, next) => {
       ],
     });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'login', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -85,6 +90,7 @@ compoundsRouter.post('/:sessionId/fill_form', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const parsed = fillFormSchema.safeParse(req.body);
@@ -102,8 +108,11 @@ compoundsRouter.post('/:sessionId/fill_form', async (req, res, next) => {
     }
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'fill_form', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { screenshot, fields: results });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'fill_form', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -118,6 +127,7 @@ compoundsRouter.post('/:sessionId/scrape', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const { schema } = req.body;
@@ -141,8 +151,11 @@ compoundsRouter.post('/:sessionId/scrape', async (req, res, next) => {
     }
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'scrape', status: 'success', durationMs: Date.now() - startTime });
     return success(res, { data, screenshot, fields });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'scrape', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -157,6 +170,7 @@ compoundsRouter.post('/:sessionId/submit_form', async (req, res, next) => {
     const session = sessionManager.get(sessionId);
     if (!session) return error(res, 'Session not found', 404);
 
+    const startTime = Date.now();
     sessionManager.touch(sessionId);
 
     const description = req.body.description ?? 'the submit button';
@@ -174,12 +188,15 @@ compoundsRouter.post('/:sessionId/submit_form', async (req, res, next) => {
     await session.page.waitForLoadState('networkidle', { timeout: 10000 });
 
     const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'submit_form', status: 'success', durationMs: Date.now() - startTime });
     return success(res, {
       screenshot,
       url: session.page.url(),
       strategy: result.strategy,
     });
   } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'submit_form', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
