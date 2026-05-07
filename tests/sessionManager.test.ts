@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SessionManager } from '../src/services/sessionManager.js';
+import { actionLogService } from '../src/services/actionLogService.js';
 
 // Mock browserManager
 const mockPage = { close: vi.fn() };
@@ -145,6 +146,18 @@ describe('SessionManager', () => {
       expect(clearTimeoutSpy).toHaveBeenCalledWith(created.timeoutHandle);
       expect(mockContext.close).toHaveBeenCalled();
       clearTimeoutSpy.mockRestore();
+    });
+
+    it('clears action logs for the destroyed session', async () => {
+      const created = await sm.create();
+
+      // Append a log entry via the singleton actionLogService
+      actionLogService.append(created.id, { action: 'click', status: 'success' });
+      expect(actionLogService.getLogs(created.id)).toHaveLength(1);
+
+      await sm.destroy(created.id);
+
+      expect(actionLogService.getLogs(created.id)).toEqual([]);
     });
   });
 

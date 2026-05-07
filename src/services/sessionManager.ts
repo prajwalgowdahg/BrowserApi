@@ -2,6 +2,7 @@ import type { BrowserContext, Page } from 'playwright-core';
 import { getBrowser } from './browserManager.js';
 import { env } from '../config/env.js';
 import { randomUUID } from 'node:crypto';
+import { actionLogService } from './actionLogService.js';
 
 export interface SessionData {
   id: string;
@@ -93,6 +94,7 @@ export class SessionManager {
     if (!session) return;
 
     clearTimeout(session.timeoutHandle);
+    actionLogService.clear(sessionId);
     this.sessions.delete(sessionId);
 
     await session.context.close().catch(() => {});
