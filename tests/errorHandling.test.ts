@@ -4,6 +4,7 @@ import express from 'express';
 import { createApp } from '../src/app.js';
 import { notFoundHandler } from '../src/middleware/notFound.js';
 import { errorHandler } from '../src/middleware/errorHandler.js';
+import { ElementNotFoundError } from '../src/services/cascadeFinder.js';
 
 describe('Error handling', () => {
   const app = createApp();
@@ -53,6 +54,41 @@ describe('Error handling', () => {
 
       expect(res.status).toBe(500);
       expect(res.body).toEqual({ success: false, error: 'Test async error' });
+    });
+  });
+
+  describe('ERR-02: ElementNotFoundError screenshot enrichment', () => {
+    it('ElementNotFoundError response includes screenshot field', async () => {
+      const testApp = express();
+      testApp.use(express.json());
+      testApp.get('/test-element-not-found', (req, res, next) => {
+        next(new ElementNotFoundError('the login button', [], 'fake-screenshot-base64'));
+      });
+      testApp.use(notFoundHandler);
+      testApp.use(errorHandler);
+
+      const res = await request(testApp).get('/test-element-not-found');
+
+      expect(res.status).toBe(500);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('the login button');
+      expect(res.body.screenshot).toBe('fake-screenshot-base64');
+    });
+
+    it('regular Error response does NOT include screenshot field', async () => {
+      const testApp = express();
+      testApp.use(express.json());
+      testApp.get('/test-regular-error', (req, res, next) => {
+        next(new Error('Something went wrong'));
+      });
+      testApp.use(notFoundHandler);
+      testApp.use(errorHandler);
+
+      const res = await request(testApp).get('/test-regular-error');
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ success: false, error: 'Something went wrong' });
+      expect(res.body).not.toHaveProperty('screenshot');
     });
   });
 
