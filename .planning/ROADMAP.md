@@ -105,10 +105,11 @@ Plans:
   1. When an element is not found, the error response includes a screenshot of the current page state
   2. Every action (across all endpoints) is logged with timestamp, sessionId, action name, and success/fail status
   3. A caller can review logs for a session to trace the full sequence of actions and their outcomes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md -- ERR-02 screenshot enrichment in error handler, ActionLogService with in-memory per-session storage, session cleanup integration
+- [ ] 06-02-PLAN.md -- Wire logging into all route handlers, GET /sessions/:sessionId/logs endpoint, integration tests
 
 ## Progress
 
@@ -122,4 +123,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Core Actions | 2/2 | Complete | 2026-05-04 |
 | 4. AI Element Finding | 2/2 | Complete | 2026-05-04 |
 | 5. Compound Actions | 2/2 | Complete | 2026-05-05 |
-| 6. Observability and Polish | 0/? | Not started | - |
+| 6. Observability and Polish | 0/2 | Not started | - |
