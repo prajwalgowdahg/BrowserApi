@@ -47,7 +47,7 @@
 ### Error Handling & Logging
 
 - [x] **ERR-01**: All endpoints return a consistent JSON response: { success: boolean, data?, error?, screenshot? }
-- [ ] **ERR-02**: On element-not-found, response includes a screenshot of the current page state
+- [x] **ERR-02**: On element-not-found, response includes a screenshot of the current page state
 - [x] **ERR-03**: Server never crashes — all route handlers wrapped in try/catch
 - [x] **ERR-04**: Express async error handling prevents silent swallowed errors in async route handlers
 - [ ] **LOG-01**: Every action is logged with timestamp, sessionId, action name, and success/fail
@@ -108,8 +108,8 @@
 | COMP-02 | Phase 5 | Complete |
 | COMP-03 | Phase 5 | Complete |
 | COMP-04 | Phase 5 | Complete |
-| ERR-02 | Phase 6 | Pending |
-| LOG-01 | Phase 6 | Pending |
+| ERR-02 | Phase 6 | Complete |
+| LOG-01 | Phase 6 | In Progress |
 
 **Coverage:**
 - v1 requirements: 30 total

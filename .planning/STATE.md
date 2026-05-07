@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-05-05T13:20:46Z"
-last_activity: 2026-05-05 -- Plan 05-02 completed, scrape + submit_form, Phase 5 COMPLETE
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-05-07T03:36:13Z"
+last_activity: 2026-05-07 -- Plan 06-01 completed, error enrichment + ActionLogService
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-02)
 
 **Core value:** Callers never write a CSS selector or XPath -- they describe WHAT they want to do, and the API handles HOW.
-**Current focus:** Phase 5 (Compound Actions) COMPLETE -- all 4 compound actions implemented, ready for Phase 6
+**Current focus:** Phase 6 (Observability and Error Polish) -- Plan 1 of 2 complete, ActionLogService + error enrichment done
 
 ## Current Position
 
-Phase: 5 of 6 (Compound Actions) -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE
-Status: All 9 plans complete (100%), Phase 6 (Observability) next
-Last activity: 2026-05-05 -- Plan 05-02 completed, scrape + submit_form, Phase 5 COMPLETE
+Phase: 6 of 6 (Observability and Error Polish) -- IN PROGRESS
+Plan: 1 of 2 in current phase -- COMPLETE
+Status: 10 of 11 plans complete (91%), Plan 06-02 next
+Last activity: 2026-05-07 -- Plan 06-01 completed, error enrichment + ActionLogService
 
-Progress: [██████████] 100%
+Progress: [█████████ ] 91%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 4 min
-- Total execution time: 0.7 hours
+- Total execution time: 0.8 hours
 
 **By Phase:**
 
@@ -48,9 +48,10 @@ Progress: [██████████] 100%
 | 03-core-actions | 2 | 9min | 5min |
 | 04-ai-element-finding | 2/2 | 10min | 5min |
 | 05-compound-actions | 2/2 | 7min | 4min |
+| 06-observability | 1/2 | 5min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (6min), 04-02 (4min), 05-01 (3min), 05-02 (4min)
+- Last 5 plans: 04-02 (4min), 05-01 (3min), 05-02 (4min), 06-01 (5min)
 - Trend: Consistent velocity, all phases on track
 
 *Updated after each plan completion*
@@ -58,6 +59,7 @@ Progress: [██████████] 100%
 | Phase 04 P02 | 4min | 2 tasks | 3 files |
 | Phase 05 P01 | 3min | 2 tasks | 3 files |
 | Phase 05 P02 | 4min | 2 tasks | 2 files |
+| Phase 06 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -98,6 +100,9 @@ Recent decisions affecting current work:
 - Scrape uses inline validation (not Zod) for dynamic Record<string,string> schema with per-field error messages (05-02)
 - Submit form defaults to "the submit button", handles vision coordinate clicks, waits for networkidle (05-02)
 - Scrape extracts innerText from found elements for structured data output with field-level strategy tracking (05-02)
+- Screenshot enrichment in errorHandler via instanceof ElementNotFoundError, not in response utility (06-01)
+- ActionLogService uses in-memory Map per session with append/getLogs/clear; singleton exported for route handler use (06-01)
+- SessionManager.destroy() clears action logs before removing session to keep session ID valid during cleanup (06-01)
 
 ### Pending Todos
 
@@ -110,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T13:20:46Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-05-07T03:36:13Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
