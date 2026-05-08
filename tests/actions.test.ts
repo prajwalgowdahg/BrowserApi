@@ -28,6 +28,13 @@ const TALL_HTML = `data:text/html,${encodeURIComponent(
 
 const SIMPLE_HTML = 'data:text/html,<h1>Hello</h1>';
 
+const MODAL_HTML = `data:text/html,${encodeURIComponent(
+  '<div role="dialog"><button id="closeBtn">Close</button><p>Popup</p></div>' +
+    '<button id="mainBtn">Main Action</button>' +
+    '<input id="search" placeholder="Search products">' +
+    '<script>document.getElementById("closeBtn").addEventListener("click",function(){document.querySelector("[role=dialog]").remove()})</script>',
+)}`;
+
 async function createSessionAndNavigate(
   app: ReturnType<typeof createApp>,
   html: string,
@@ -263,6 +270,133 @@ describe(
       await sessionManager.delete(sessionId);
     });
 
+    // --- Rich observation and generic primitives ---
+    it('POST /sessions/:id/observe returns page text, forms, elements, and screenshot', async () => {
+      const { sessionId } = await createSessionAndNavigate(app, FORM_HTML);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/observe`)
+        .send({ limit: 20 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.text).toContain('Test Form');
+      expect(Array.isArray(res.body.data.elements)).toBe(true);
+      expect(Array.isArray(res.body.data.forms)).toBe(true);
+      expect(typeof res.body.data.screenshot).toBe('string');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/find_elements returns ranked candidates', async () => {
+      const { sessionId } = await createSessionAndNavigate(app, MODAL_HTML);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/find_elements`)
+        .send({ query: 'search input', limit: 5 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.elements.length).toBeGreaterThan(0);
+      expect(res.body.data.elements[0].score).toBeGreaterThan(0);
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/type_and_press fills search and presses Enter', async () => {
+      const searchHtml = `data:text/html,${encodeURIComponent(
+        '<input id="search" placeholder="Search products">' +
+          '<div id="result"></div>' +
+          '<script>document.getElementById("search").addEventListener("keydown",function(e){if(e.key==="Enter"){document.getElementById("result").textContent=this.value}})</script>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, searchHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/type_and_press`)
+        .send({ description: 'search input', value: 'poco phone' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const session = sessionManager.get(sessionId);
+      await expect(session!.page.locator('#result').innerText()).resolves.toBe('poco phone');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/select_choice selects custom visible choices', async () => {
+      const sizeHtml = `data:text/html,${encodeURIComponent(
+        '<button data-size="30">30</button><button data-size="32">32</button><div id="selected"></div>' +
+          '<script>document.querySelector("[data-size=\\"32\\"]").addEventListener("click",function(){document.getElementById("selected").textContent="32"})</script>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, sizeHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/select_choice`)
+        .send({ description: 'size selector', value: '32' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const session = sessionManager.get(sessionId);
+      await expect(session!.page.locator('#selected').innerText()).resolves.toBe('32');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/dismiss_overlays closes common modal buttons', async () => {
+      const { sessionId } = await createSessionAndNavigate(app, MODAL_HTML);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/dismiss_overlays`)
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      const session = sessionManager.get(sessionId);
+      await expect(session!.page.locator('[role="dialog"]').count()).resolves.toBe(0);
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/human_check detects CAPTCHA-style pages', async () => {
+      const captchaHtml = `data:text/html,${encodeURIComponent(
+        '<h1>Verify you are human</h1><iframe title="reCAPTCHA challenge" src="https://www.google.com/recaptcha/api2/anchor"></iframe>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, captchaHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/human_check`)
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.required).toBe(true);
+      expect(typeof res.body.data.reason).toBe('string');
+      expect(Array.isArray(res.body.data.evidence)).toBe(true);
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/human_check reports no challenge on ordinary pages', async () => {
+      const { sessionId } = await createSessionAndNavigate(app, SIMPLE_HTML);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/human_check`)
+        .send({});
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.required).toBe(false);
+
+      await sessionManager.delete(sessionId);
+    });
+
     // --- ACT-06: Wait ---
     it('POST /sessions/:id/wait with waitType element waits for described element', async () => {
       const { sessionId } = await createSessionAndNavigate(app, FORM_HTML);
@@ -399,6 +533,12 @@ describe(
         { path: `/sessions/${fakeId}/get_text`, body: { description: 'heading' } },
         { path: `/sessions/${fakeId}/wait`, body: { description: 'button', waitType: 'element' } },
         { path: `/sessions/${fakeId}/scroll`, body: { direction: 'down', amount: 500 } },
+        { path: `/sessions/${fakeId}/observe`, body: {} },
+        { path: `/sessions/${fakeId}/find_elements`, body: { query: 'button' } },
+        { path: `/sessions/${fakeId}/type_and_press`, body: { description: 'input', value: 'x' } },
+        { path: `/sessions/${fakeId}/select_choice`, body: { description: 'size', value: '32' } },
+        { path: `/sessions/${fakeId}/dismiss_overlays`, body: {} },
+        { path: `/sessions/${fakeId}/human_check`, body: {} },
       ];
 
       for (const ep of endpoints) {

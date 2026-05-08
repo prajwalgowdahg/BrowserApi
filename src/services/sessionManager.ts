@@ -32,7 +32,15 @@ export class SessionManager {
     }
 
     const browser = getBrowser();
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      viewport: { width: env.BROWSER_VIEWPORT_WIDTH, height: env.BROWSER_VIEWPORT_HEIGHT },
+      locale: env.BROWSER_LOCALE,
+      timezoneId: env.BROWSER_TIMEZONE,
+      ...(env.BROWSER_USER_AGENT ? { userAgent: env.BROWSER_USER_AGENT } : {}),
+      extraHTTPHeaders: {
+        'Accept-Language': `${env.BROWSER_LOCALE},en;q=0.9`,
+      },
+    });
     const page = await context.newPage();
     const id = randomUUID();
 

@@ -321,6 +321,69 @@ describe(
       });
     });
 
+    // --- COMP-05+: Search and targeted adapters ---
+
+    describe('POST /:sessionId/search_site', () => {
+      it('searches a visible search input and submits the query', async () => {
+        const sessionId = await createSession();
+        const searchUrl = `data:text/html,${encodeURIComponent(
+          '<input type="search" id="q" placeholder="Search">' +
+            '<div id="result"></div>' +
+            '<script>document.getElementById("q").addEventListener("keydown",function(e){if(e.key==="Enter"){document.getElementById("result").textContent=this.value}})</script>',
+        )}`;
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/search_site`)
+          .send({ url: searchUrl, query: 'poco phone' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.status).toBe('searched');
+        const session = sessionManager.get(sessionId);
+        await expect(session!.page.locator('#result').innerText()).resolves.toBe('poco phone');
+
+        await sessionManager.delete(sessionId);
+      });
+    });
+
+    describe('POST /:sessionId/flipkart_select_size', () => {
+      it('selects a local size button and reports selected status', async () => {
+        const sessionId = await createSession();
+        const sizeUrl = `data:text/html,${encodeURIComponent(
+          '<button>30</button><button id="size32">32</button><div id="status"></div>' +
+            '<script>document.getElementById("size32").addEventListener("click",function(){document.getElementById("status").textContent="selected"})</script>',
+        )}`;
+        await request(app).post(`/sessions/${sessionId}/navigate`).send({ url: sizeUrl });
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/flipkart_select_size`)
+          .send({ size: '32' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.status).toBe('size_selected');
+        const session = sessionManager.get(sessionId);
+        await expect(session!.page.locator('#status').innerText()).resolves.toBe('selected');
+
+        await sessionManager.delete(sessionId);
+      });
+    });
+
+    describe('POST /:sessionId/google_flights_search', () => {
+      it('returns 400 when required flight fields are missing', async () => {
+        const sessionId = await createSession();
+
+        const res = await request(app)
+          .post(`/sessions/${sessionId}/google_flights_search`)
+          .send({ origin: 'Bengaluru', destination: 'Delhi' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.success).toBe(false);
+
+        await sessionManager.delete(sessionId);
+      });
+    });
+
     // --- COMP-04: Submit form endpoint ---
 
     describe('POST /:sessionId/submit_form', () => {

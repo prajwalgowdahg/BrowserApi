@@ -7,7 +7,7 @@ export async function launchBrowser(): Promise<Browser> {
   if (browser) return browser;
 
   browser = await chromium.launch({
-    headless: true,
+    headless: !env.HEADED,
     ...(env.CHROMIUM_PATH ? { executablePath: env.CHROMIUM_PATH } : {}),
   });
 

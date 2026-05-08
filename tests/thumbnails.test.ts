@@ -65,6 +65,19 @@ describe('screenshotPage', () => {
     const outputBuffer = Buffer.from(result, 'base64');
     const metadata = await sharp(outputBuffer).metadata();
     expect(metadata.width).toBe(400);
-    expect(mockPage.screenshot).toHaveBeenCalledWith({ type: 'png' });
+    expect(mockPage.screenshot).toHaveBeenCalledWith({ type: 'png', timeout: 5000 });
+  });
+
+  it('returns a fallback base64 image when screenshot capture fails', async () => {
+    const mockPage = {
+      screenshot: vi.fn().mockRejectedValue(new Error('screenshot timeout')),
+    };
+
+    const result = await screenshotPage(mockPage as any);
+    const outputBuffer = Buffer.from(result, 'base64');
+    const metadata = await sharp(outputBuffer).metadata();
+
+    expect(metadata.width).toBe(1);
+    expect(metadata.height).toBe(1);
   });
 });

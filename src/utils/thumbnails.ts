@@ -1,6 +1,9 @@
 import sharp from 'sharp';
 import type { Page } from 'playwright-core';
 
+const FALLBACK_SCREENSHOT =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+
 export async function createThumbnail(
   screenshotBuffer: Buffer,
   width = 400,
@@ -14,6 +17,10 @@ export async function createThumbnail(
 }
 
 export async function screenshotPage(page: Page): Promise<string> {
-  const screenshotBuffer = await page.screenshot({ type: 'png' });
-  return createThumbnail(screenshotBuffer);
+  try {
+    const screenshotBuffer = await page.screenshot({ type: 'png', timeout: 5000 });
+    return createThumbnail(screenshotBuffer);
+  } catch {
+    return FALLBACK_SCREENSHOT;
+  }
 }
