@@ -42,6 +42,20 @@ export const toolDefinitions: ChatCompletionFunctionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'snapshot',
+      description: 'Create a page snapshot with stable element refs like @e1, @e2. Prefer this before click_ref/fill_ref/select_ref.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Maximum interactive elements to return. Defaults to 80.' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'find_elements',
       description: 'Return ranked visible element candidates for a natural-language query. Use this before choosing an observed element id.',
       parameters: {
@@ -123,6 +137,35 @@ export const toolDefinitions: ChatCompletionFunctionTool[] = [
           id: { type: 'string', description: 'Observed element id, such as e4' },
         },
         required: ['id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'click_ref',
+      description: 'Click an element ref returned by snapshot, such as @e3. Prefer this over natural-language clicking after a snapshot.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ref: { type: 'string', description: 'Snapshot element ref, such as @e3' },
+        },
+        required: ['ref'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fill_ref',
+      description: 'Fill an input/textarea/contenteditable element ref returned by snapshot.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ref: { type: 'string', description: 'Snapshot element ref, such as @e3' },
+          value: { type: 'string', description: 'Text to fill' },
+        },
+        required: ['ref', 'value'],
       },
     },
   },
@@ -246,6 +289,21 @@ export const toolDefinitions: ChatCompletionFunctionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'select_ref',
+      description: 'Select a native or custom choice using an element ref from snapshot and a visible option value.',
+      parameters: {
+        type: 'object',
+        properties: {
+          ref: { type: 'string', description: 'Snapshot element ref, such as @e5' },
+          value: { type: 'string', description: 'Visible choice to select' },
+        },
+        required: ['ref', 'value'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'take_screenshot',
       description: 'Take a full-page screenshot and save it to disk. Use this to see the current state of the page.',
       parameters: {
@@ -314,6 +372,25 @@ export const toolDefinitions: ChatCompletionFunctionTool[] = [
         type: 'object',
         properties: {},
         required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'batch',
+      description: 'Execute multiple deterministic browser actions in order. Use for simple flows after refs are known to reduce tool-call loops.',
+      parameters: {
+        type: 'object',
+        properties: {
+          actions: {
+            type: 'array',
+            items: { type: 'object' },
+            description: 'Ordered actions such as {action:"navigate",url}, {action:"snapshot"}, {action:"fill_ref",ref,value}, {action:"click_ref",ref}.',
+          },
+          screenshots: { type: 'boolean', description: 'Whether to include screenshots after each step. Defaults to true.' },
+        },
+        required: ['actions'],
       },
     },
   },
@@ -493,6 +570,11 @@ function getEndpointAndBody(
       if (args.limit) body.limit = args.limit;
       return { endpoint: `/sessions/${s}/observe`, body };
     }
+    case 'snapshot': {
+      const body: Record<string, unknown> = {};
+      if (args.limit) body.limit = args.limit;
+      return { endpoint: `/sessions/${s}/snapshot`, body };
+    }
     case 'find_elements': {
       const body: Record<string, unknown> = { query: args.query };
       if (args.limit) body.limit = args.limit;
@@ -508,6 +590,10 @@ function getEndpointAndBody(
       return { endpoint: `/sessions/${s}/click_coordinates`, body: { x: args.x, y: args.y } };
     case 'click_observed':
       return { endpoint: `/sessions/${s}/click_observed`, body: { id: args.id } };
+    case 'click_ref':
+      return { endpoint: `/sessions/${s}/click_ref`, body: { ref: args.ref } };
+    case 'fill_ref':
+      return { endpoint: `/sessions/${s}/fill_ref`, body: { ref: args.ref, value: args.value } };
     case 'type_text':
       return { endpoint: `/sessions/${s}/type`, body: { description: args.description, value: args.value } };
     case 'type_and_press_enter':
@@ -524,6 +610,8 @@ function getEndpointAndBody(
       return { endpoint: `/sessions/${s}/select`, body: { description: args.description, value: args.value } };
     case 'select_choice':
       return { endpoint: `/sessions/${s}/select_choice`, body: { description: args.description, value: args.value } };
+    case 'select_ref':
+      return { endpoint: `/sessions/${s}/select_ref`, body: { ref: args.ref, value: args.value } };
     case 'take_screenshot':
       return { endpoint: `/sessions/${s}/screenshot/full`, body: {} };
     case 'get_text':
@@ -544,6 +632,8 @@ function getEndpointAndBody(
     }
     case 'dismiss_overlays':
       return { endpoint: `/sessions/${s}/dismiss_overlays`, body: {} };
+    case 'batch':
+      return { endpoint: `/sessions/${s}/batch`, body: { actions: args.actions, screenshots: args.screenshots } };
     case 'login': {
       const body: Record<string, unknown> = { url: args.url, username: args.username, password: args.password };
       if (args.usernameDescription) body.usernameDescription = args.usernameDescription;
@@ -615,18 +705,20 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
         return `HUMAN_CHECK_REQUIRED. Reason: ${data.reason}. Evidence: ${JSON.stringify(data.evidence ?? [])}. URL: ${data.url}. Please ask the user to complete the verification manually in the browser, then type "continue".${ss}`;
       }
       return `No human check detected. URL: ${data.url}. Title: ${data.title}.${ss}`;
-    case 'observe_page': {
+    case 'observe_page':
+    case 'snapshot': {
       const elements = (data.elements as Array<Record<string, unknown>> | undefined) ?? [];
       const forms = (data.forms as Array<Record<string, unknown>> | undefined) ?? [];
       const elementSummary = elements.slice(0, 12).map((el) => {
         const label = el.label || el.text || el.placeholder || el.href || '';
-        return `${el.id}:${el.role ?? el.tag} "${String(label).slice(0, 80)}"`;
+        return `${el.ref ?? el.id}:${el.role ?? el.tag} "${String(label).slice(0, 80)}"`;
       }).join('; ');
       const mode = data.observationMode ? ` Mode: ${data.observationMode}.` : '';
       const diagnostics = Array.isArray(data.diagnostics) && data.diagnostics.length > 0
         ? ` Diagnostics: ${JSON.stringify(data.diagnostics)}.`
         : '';
-      return `Observed page.${mode}${diagnostics} URL: ${data.url}. Title: ${data.title}. Text: "${String(data.text ?? '').slice(0, 1200)}". Forms: ${forms.length}. Elements: ${elementSummary}.${ss}`;
+      const snapshot = data.snapshotId ? ` Snapshot: ${data.snapshotId}.` : '';
+      return `Observed page.${snapshot}${mode}${diagnostics} URL: ${data.url}. Title: ${data.title}. Text: "${String(data.text ?? '').slice(0, 1200)}". Forms: ${forms.length}. Elements: ${elementSummary}.${ss}`;
     }
     case 'find_elements': {
       const elements = (data.elements as Array<Record<string, unknown>> | undefined) ?? [];
@@ -650,8 +742,12 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
       return `Clicked coordinates ${JSON.stringify(data.clickedAt)}.${ss}`;
     case 'click_observed':
       return `Clicked observed element ${data.id}.${ss}`;
+    case 'click_ref':
+      return `Clicked snapshot ref ${data.ref}. Current URL: ${data.url}.${ss}`;
     case 'type_text':
       return `Typed text into element (strategy: ${data.strategy}).${ss}`;
+    case 'fill_ref':
+      return `Filled snapshot ref ${data.ref}.${ss}`;
     case 'type_and_press_enter':
       return `Typed text and pressed ${data.key} (strategy: ${data.strategy}). Current URL: ${data.url}.${ss}`;
     case 'press_key':
@@ -666,6 +762,8 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
       return `Selected option (strategy: ${data.strategy}).${ss}`;
     case 'select_choice':
       return `Selected choice "${data.value}" (strategy: ${data.strategy}).${ss}`;
+    case 'select_ref':
+      return `Selected "${data.value}" using snapshot ref ${data.ref}.${ss}`;
     case 'take_screenshot':
       return `Full-page screenshot saved to ${screenshotPath}`;
     case 'get_text':
@@ -678,6 +776,8 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
     }
     case 'dismiss_overlays':
       return `Dismissed overlays: ${JSON.stringify(data.dismissed ?? [])}.${ss}`;
+    case 'batch':
+      return `Batch finished with status ${data.status}. Stop reason: ${data.stopReason ?? 'none'}. Results:\n${JSON.stringify(data.results, null, 2)}`;
     case 'login': {
       const steps = data.steps as Array<Record<string, string>>;
       return `Login completed. Current URL: ${data.url}. Steps: ${steps.map((s) => s.step).join(', ')}.${ss}`;

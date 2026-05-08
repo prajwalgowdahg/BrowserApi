@@ -3,11 +3,16 @@ import { getBrowser } from './browserManager.js';
 import { env } from '../config/env.js';
 import { randomUUID } from 'node:crypto';
 import { actionLogService } from './actionLogService.js';
+import { profileService } from './profileService.js';
+import { browserEventService } from './browserEventService.js';
+import type { PageObservation } from './pageObserver.js';
 
 export interface SessionData {
   id: string;
   context: BrowserContext;
   page: Page;
+  profileId?: string;
+  latestSnapshot?: PageObservation & { snapshotId: string; createdAt: string };
   lastActivity: number;
   timeoutHandle: ReturnType<typeof setTimeout>;
 }
@@ -26,16 +31,18 @@ export class SessionManager {
     this.sweepInterval = setInterval(() => this.sweep(), 60_000);
   }
 
-  async create(): Promise<SessionData> {
+  async create(options: { profileId?: string } = {}): Promise<SessionData> {
     if (this.sessions.size >= this.maxSessions) {
       throw new Error('Maximum concurrent sessions reached');
     }
 
     const browser = getBrowser();
+    const storageState = await profileService.storageStateOption(options.profileId);
     const context = await browser.newContext({
       viewport: { width: env.BROWSER_VIEWPORT_WIDTH, height: env.BROWSER_VIEWPORT_HEIGHT },
       locale: env.BROWSER_LOCALE,
       timezoneId: env.BROWSER_TIMEZONE,
+      ...(storageState ? { storageState } : {}),
       ...(env.BROWSER_USER_AGENT ? { userAgent: env.BROWSER_USER_AGENT } : {}),
       extraHTTPHeaders: {
         'Accept-Language': `${env.BROWSER_LOCALE},en;q=0.9`,
@@ -57,11 +64,13 @@ export class SessionManager {
       id,
       context,
       page,
+      profileId: options.profileId,
       lastActivity: Date.now(),
       timeoutHandle,
     };
 
     this.sessions.set(id, session);
+    browserEventService.attach(id, page);
     return session;
   }
 
@@ -102,7 +111,9 @@ export class SessionManager {
     if (!session) return;
 
     clearTimeout(session.timeoutHandle);
+    await profileService.saveContext(session.profileId, session.context).catch(() => {});
     actionLogService.clear(sessionId);
+    browserEventService.clear(sessionId);
     this.sessions.delete(sessionId);
 
     await session.context.close().catch(() => {});

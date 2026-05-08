@@ -3,10 +3,11 @@ import { SessionManager } from '../src/services/sessionManager.js';
 import { actionLogService } from '../src/services/actionLogService.js';
 
 // Mock browserManager
-const mockPage = { close: vi.fn() };
+const mockPage = { close: vi.fn(), on: vi.fn() };
 const mockContext = {
   newPage: vi.fn().mockResolvedValue(mockPage),
   close: vi.fn().mockResolvedValue(undefined),
+  storageState: vi.fn().mockResolvedValue(undefined),
 };
 
 vi.mock('../src/services/browserManager.js', () => ({
@@ -22,7 +23,9 @@ describe('SessionManager', () => {
     vi.useFakeTimers();
     sm = new SessionManager(1000, 2);
     mockContext.close.mockClear();
+    mockContext.storageState.mockClear();
     mockPage.close.mockClear();
+    mockPage.on.mockClear();
   });
 
   afterEach(() => {

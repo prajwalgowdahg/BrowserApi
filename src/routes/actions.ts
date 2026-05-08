@@ -1,13 +1,125 @@
 import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import { success, error } from '../utils/response.js';
 import { sessionManager } from '../services/sessionManager.js';
 import { screenshotPage } from '../utils/thumbnails.js';
 import { findElementWithAI } from '../services/cascadeFinder.js';
 import { actionLogService } from '../services/actionLogService.js';
-import { findRankedElements, locatorForObservedId, observePage } from '../services/pageObserver.js';
+import { findRankedElements, locatorForObservedId, locatorForObservedRef, observePage } from '../services/pageObserver.js';
 import { detectHumanCheck } from '../services/humanCheckDetector.js';
+import { evaluatePolicy } from '../services/policyGate.js';
 
 export const actionsRouter = Router();
+
+type BatchAction = {
+  action: string;
+  [key: string]: unknown;
+};
+
+function storeSnapshot(session: NonNullable<ReturnType<typeof sessionManager.get>>, observation: Awaited<ReturnType<typeof observePage>>) {
+  const snapshot = {
+    ...observation,
+    snapshotId: randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+  session.latestSnapshot = snapshot;
+  return snapshot;
+}
+
+function latestSnapshotOrThrow(session: NonNullable<ReturnType<typeof sessionManager.get>>) {
+  if (!session.latestSnapshot) {
+    throw new Error('No snapshot available. Call snapshot first.');
+  }
+  return session.latestSnapshot;
+}
+
+async function clickRef(session: NonNullable<ReturnType<typeof sessionManager.get>>, ref: string) {
+  const snapshot = latestSnapshotOrThrow(session);
+  const locator = await locatorForObservedRef(session.page, ref, snapshot.elements);
+  await locator.click();
+  await session.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+  return { ref, snapshotId: snapshot.snapshotId, url: session.page.url() };
+}
+
+async function fillRef(session: NonNullable<ReturnType<typeof sessionManager.get>>, ref: string, value: string) {
+  const snapshot = latestSnapshotOrThrow(session);
+  const locator = await locatorForObservedRef(session.page, ref, snapshot.elements);
+  await locator.fill(value);
+  return { ref, snapshotId: snapshot.snapshotId };
+}
+
+async function selectRef(session: NonNullable<ReturnType<typeof sessionManager.get>>, ref: string, value: string) {
+  const snapshot = latestSnapshotOrThrow(session);
+  const locator = await locatorForObservedRef(session.page, ref, snapshot.elements);
+  const tagName = await locator.evaluate((el) => el.tagName.toLowerCase()).catch(() => '');
+  if (tagName === 'select') {
+    await locator.selectOption({ label: value });
+  } else {
+    await locator.click().catch(() => {});
+    const choice = session.page.getByText(new RegExp(`^\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i')).first();
+    if ((await choice.count().catch(() => 0)) === 0) {
+      throw new Error(`Choice not found after opening ${ref}: ${value}`);
+    }
+    await choice.click({ timeout: 3000 });
+  }
+  await session.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+  return { ref, value, snapshotId: snapshot.snapshotId };
+}
+
+async function executeBatchAction(session: NonNullable<ReturnType<typeof sessionManager.get>>, item: BatchAction) {
+  switch (item.action) {
+    case 'navigate': {
+      if (typeof item.url !== 'string') throw new Error('navigate requires url');
+      await session.page.goto(item.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await session.page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+      return { url: session.page.url() };
+    }
+    case 'snapshot': {
+      const limit = Number(item.limit ?? 80);
+      return storeSnapshot(session, await observePage(session.page, Number.isFinite(limit) ? limit : 80));
+    }
+    case 'click_ref':
+      if (typeof item.ref !== 'string') throw new Error('click_ref requires ref');
+      return clickRef(session, item.ref);
+    case 'fill_ref':
+      if (typeof item.ref !== 'string') throw new Error('fill_ref requires ref');
+      if (typeof item.value !== 'string') throw new Error('fill_ref requires value');
+      return fillRef(session, item.ref, item.value);
+    case 'select_ref':
+      if (typeof item.ref !== 'string') throw new Error('select_ref requires ref');
+      if (typeof item.value !== 'string') throw new Error('select_ref requires value');
+      return selectRef(session, item.ref, item.value);
+    case 'press_key':
+      if (typeof item.key !== 'string') throw new Error('press_key requires key');
+      await session.page.keyboard.press(item.key);
+      return { key: item.key };
+    case 'wait_for': {
+      const timeout = Number(item.timeout ?? 5000);
+      const waitType = typeof item.waitType === 'string' ? item.waitType : 'networkidle';
+      if (waitType === 'networkidle') await session.page.waitForLoadState('networkidle', { timeout }).catch(() => {});
+      else if (waitType === 'domcontentloaded') await session.page.waitForLoadState('domcontentloaded', { timeout }).catch(() => {});
+      else await session.page.waitForTimeout(Math.max(0, Math.min(timeout, 30000)));
+      return { waited: waitType };
+    }
+    case 'dismiss_overlays': {
+      const labels = ['close', 'dismiss', 'cancel', 'not now', 'skip'];
+      const dismissed: string[] = [];
+      await session.page.keyboard.press('Escape').catch(() => {});
+      for (const label of labels) {
+        const locator = session.page.getByText(new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i')).first();
+        if ((await locator.count().catch(() => 0)) > 0 && (await locator.isVisible().catch(() => false))) {
+          await locator.click({ timeout: 1000 }).catch(() => {});
+          dismissed.push(label);
+        }
+      }
+      return { dismissed };
+    }
+    case 'human_check':
+      return detectHumanCheck(session.page);
+    default:
+      throw new Error(`Unsupported batch action: ${item.action}`);
+  }
+}
 
 // POST /:sessionId/navigate (NAV-01, NAV-02)
 actionsRouter.post('/:sessionId/navigate', async (req, res, next) => {
@@ -252,12 +364,36 @@ actionsRouter.post('/:sessionId/observe', async (req, res, next) => {
 
     const limit = Number(req.body.limit ?? 80);
     const observation = await observePage(session.page, Number.isFinite(limit) ? limit : 80);
+    const snapshot = storeSnapshot(session, observation);
     const screenshot = await screenshotPage(session.page);
     actionLogService.append(sessionId, { action: 'observe', status: 'success', durationMs: Date.now() - startTime });
-    return success(res, { ...observation, screenshot });
+    return success(res, { ...snapshot, screenshot });
   } catch (err) {
     const { sessionId } = req.params;
     actionLogService.append(sessionId, { action: 'observe', status: 'fail', error: (err as Error).message, durationMs: 0 });
+    next(err);
+  }
+});
+
+// POST /:sessionId/snapshot
+actionsRouter.post('/:sessionId/snapshot', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    const startTime = Date.now();
+    sessionManager.touch(sessionId);
+
+    const limit = Number(req.body.limit ?? 80);
+    const observation = await observePage(session.page, Number.isFinite(limit) ? limit : 80);
+    const snapshot = storeSnapshot(session, observation);
+    const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'snapshot', status: 'success', durationMs: Date.now() - startTime });
+    return success(res, { ...snapshot, screenshot });
+  } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'snapshot', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -282,6 +418,77 @@ actionsRouter.post('/:sessionId/find_elements', async (req, res, next) => {
   } catch (err) {
     const { sessionId } = req.params;
     actionLogService.append(sessionId, { action: 'find_elements', status: 'fail', error: (err as Error).message, durationMs: 0 });
+    next(err);
+  }
+});
+
+// POST /:sessionId/click_ref
+actionsRouter.post('/:sessionId/click_ref', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    const startTime = Date.now();
+    sessionManager.touch(sessionId);
+
+    const { ref } = req.body;
+    if (!ref || typeof ref !== 'string') return error(res, 'Missing required field: ref', 400);
+    const result = await clickRef(session, ref);
+    const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'click_ref', status: 'success', durationMs: Date.now() - startTime });
+    return success(res, { ...result, screenshot });
+  } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'click_ref', status: 'fail', error: (err as Error).message, durationMs: 0 });
+    next(err);
+  }
+});
+
+// POST /:sessionId/fill_ref
+actionsRouter.post('/:sessionId/fill_ref', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    const startTime = Date.now();
+    sessionManager.touch(sessionId);
+
+    const { ref, value } = req.body;
+    if (!ref || typeof ref !== 'string') return error(res, 'Missing required field: ref', 400);
+    if (typeof value !== 'string') return error(res, 'Missing required field: value', 400);
+    const result = await fillRef(session, ref, value);
+    const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'fill_ref', status: 'success', durationMs: Date.now() - startTime });
+    return success(res, { ...result, screenshot });
+  } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'fill_ref', status: 'fail', error: (err as Error).message, durationMs: 0 });
+    next(err);
+  }
+});
+
+// POST /:sessionId/select_ref
+actionsRouter.post('/:sessionId/select_ref', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    const startTime = Date.now();
+    sessionManager.touch(sessionId);
+
+    const { ref, value } = req.body;
+    if (!ref || typeof ref !== 'string') return error(res, 'Missing required field: ref', 400);
+    if (!value || typeof value !== 'string') return error(res, 'Missing required field: value', 400);
+    const result = await selectRef(session, ref, value);
+    const screenshot = await screenshotPage(session.page);
+    actionLogService.append(sessionId, { action: 'select_ref', status: 'success', durationMs: Date.now() - startTime });
+    return success(res, { ...result, screenshot });
+  } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'select_ref', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });
@@ -574,6 +781,64 @@ actionsRouter.post('/:sessionId/click_observed', async (req, res, next) => {
   } catch (err) {
     const { sessionId } = req.params;
     actionLogService.append(sessionId, { action: 'click_observed', status: 'fail', error: (err as Error).message, durationMs: 0 });
+    next(err);
+  }
+});
+
+// POST /:sessionId/batch
+actionsRouter.post('/:sessionId/batch', async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const session = sessionManager.get(sessionId);
+    if (!session) return error(res, 'Session not found', 404);
+
+    const startTime = Date.now();
+    sessionManager.touch(sessionId);
+
+    const actions = Array.isArray(req.body.actions) ? req.body.actions as BatchAction[] : [];
+    if (actions.length === 0) return error(res, 'Missing required field: actions', 400);
+    const includeScreenshots = req.body.screenshots !== false;
+    const results: Array<Record<string, unknown>> = [];
+    let stopReason: string | undefined;
+
+    for (const [index, item] of actions.entries()) {
+      const policy = evaluatePolicy({
+        taskType: 'web.batch',
+        action: item.action,
+        text: JSON.stringify(item),
+      });
+      if (policy.needsApproval) {
+        stopReason = 'needs_approval';
+        results.push({ index, action: item.action, status: 'needs_approval', evidence: policy.evidence });
+        break;
+      }
+
+      try {
+        const data = await executeBatchAction(session, item);
+        const humanCheck = await detectHumanCheck(session.page);
+        const screenshot = includeScreenshots ? await screenshotPage(session.page) : undefined;
+        results.push({ index, action: item.action, status: 'success', data, humanCheck, screenshot });
+        if (humanCheck.required) {
+          stopReason = 'needs_human';
+          break;
+        }
+      } catch (err) {
+        stopReason = 'failed';
+        results.push({ index, action: item.action, status: 'failed', error: (err as Error).message });
+        break;
+      }
+    }
+
+    actionLogService.append(sessionId, { action: 'batch', status: stopReason === 'failed' ? 'fail' : 'success', durationMs: Date.now() - startTime });
+    return success(res, {
+      status: stopReason ?? 'completed',
+      stopReason,
+      results,
+      url: session.page.url(),
+    });
+  } catch (err) {
+    const { sessionId } = req.params;
+    actionLogService.append(sessionId, { action: 'batch', status: 'fail', error: (err as Error).message, durationMs: 0 });
     next(err);
   }
 });

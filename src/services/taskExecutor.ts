@@ -7,6 +7,7 @@ import { screenshotPage } from '../utils/thumbnails.js';
 import { evaluatePolicy } from './policyGate.js';
 import { dispatchWebhook } from './webhookService.js';
 import { findElementWithAI } from './cascadeFinder.js';
+import { browserEventService } from './browserEventService.js';
 
 export interface RunTaskRequest {
   type: TaskType;
@@ -87,7 +88,7 @@ async function executeTask(taskId: string): Promise<void> {
 
   let session = task.sessionId ? sessionManager.get(task.sessionId) : undefined;
   if (!session) {
-    session = await sessionManager.create();
+    session = await sessionManager.create({ profileId: task.profileId });
     taskStore.setSession(taskId, session.id);
   }
   taskStore.setStatus(taskId, 'running', 'task.running');
@@ -113,6 +114,7 @@ async function executeTask(taskId: string): Promise<void> {
 
     const screenshot = await screenshotPage(session.page);
     taskStore.addArtifact(taskId, 'screenshot', { screenshot });
+    taskStore.addArtifact(taskId, 'log', { browserEvents: browserEventService.getEvents(session.id) });
     taskStore.addArtifact(taskId, 'result', result);
     const completed = taskStore.complete(taskId, result);
     await dispatchWebhook(completed.webhookUrl, task.type === 'web.monitor' ? 'monitor.triggered' : 'task.completed', completed).catch(() => {});
@@ -124,6 +126,9 @@ async function executeTask(taskId: string): Promise<void> {
       retryable: true,
       evidence: [task.type],
     });
+    if (session) {
+      taskStore.addArtifact(taskId, 'log', { browserEvents: browserEventService.getEvents(session.id) });
+    }
     await dispatchWebhook(failed.webhookUrl, 'task.failed', failed).catch(() => {});
     await sessionManager.delete(session.id);
   }

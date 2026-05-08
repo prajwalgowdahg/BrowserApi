@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { v1Error, v1Success, type V1Status } from '../utils/v1Response.js';
 import { cancelTask, resumeTask, runTask, serializeTask } from '../services/taskExecutor.js';
 import { taskStore, type TaskType } from '../services/taskStore.js';
+import { profileService } from '../services/profileService.js';
 
 export const v1Router = Router();
 
@@ -148,6 +149,73 @@ v1Router.get('/tasks/:taskId/artifacts', (req, res) => {
   return v1Success(res, { artifacts: task.artifacts }, requestMeta(req, task.id, task.status, task.sessionId));
 });
 
+v1Router.post('/profiles', async (req, res) => {
+  const start = Date.now();
+  const profileId = typeof req.body?.profileId === 'string' ? req.body.profileId : randomUUID();
+  try {
+    const profile = await profileService.ensure(profileId);
+    return v1Success(res, {
+      profileId: profile.profileId,
+      exists: profile.exists,
+    }, { ...requestMeta(req), durationMs: Date.now() - start }, 201);
+  } catch (err) {
+    return v1Error(res, {
+      errorCode: 'PROFILE_CREATE_FAILED',
+      message: (err as Error).message,
+      retryable: false,
+    }, { ...requestMeta(req), durationMs: Date.now() - start }, 400);
+  }
+});
+
+v1Router.get('/profiles/:profileId', async (req, res) => {
+  try {
+    const profile = profileService.getProfile(req.params.profileId);
+    return v1Success(res, {
+      profileId: profile.profileId,
+      exists: await profileService.exists(req.params.profileId),
+    }, requestMeta(req));
+  } catch (err) {
+    return v1Error(res, {
+      errorCode: 'PROFILE_NOT_FOUND',
+      message: (err as Error).message,
+      retryable: false,
+    }, requestMeta(req), 404);
+  }
+});
+
+v1Router.delete('/profiles/:profileId', async (req, res) => {
+  try {
+    await profileService.delete(req.params.profileId);
+    return v1Success(res, { deleted: true, profileId: req.params.profileId }, requestMeta(req));
+  } catch (err) {
+    return v1Error(res, {
+      errorCode: 'PROFILE_DELETE_FAILED',
+      message: (err as Error).message,
+      retryable: false,
+    }, requestMeta(req), 400);
+  }
+});
+
+v1Router.post('/profiles/:profileId/export-storage-state', async (req, res) => {
+  try {
+    const storageState = await profileService.exportStorageState(req.params.profileId);
+    if (!storageState) {
+      return v1Error(res, {
+        errorCode: 'PROFILE_STORAGE_STATE_NOT_FOUND',
+        message: 'No storage state has been saved for this profile yet.',
+        retryable: true,
+      }, requestMeta(req), 404);
+    }
+    return v1Success(res, { profileId: req.params.profileId, storageState }, requestMeta(req));
+  } catch (err) {
+    return v1Error(res, {
+      errorCode: 'PROFILE_EXPORT_FAILED',
+      message: (err as Error).message,
+      retryable: false,
+    }, requestMeta(req), 400);
+  }
+});
+
 v1Router.post('/travel/flights/search', (req, res) =>
   runAndRespond(req, res, 'travel.flight_search', req.body ?? {}));
 
@@ -189,6 +257,12 @@ v1Router.get('/openapi.json', (_req, res) => {
       '/v1/tasks/{taskId}/cancel': { post: { summary: 'Cancel a task' } },
       '/v1/tasks/{taskId}/events': { get: { summary: 'Get task events' } },
       '/v1/tasks/{taskId}/artifacts': { get: { summary: 'Get task artifacts' } },
+      '/v1/profiles': { post: { summary: 'Create or initialize a reusable browser profile' } },
+      '/v1/profiles/{profileId}': {
+        get: { summary: 'Get reusable browser profile metadata' },
+        delete: { summary: 'Delete a reusable browser profile' },
+      },
+      '/v1/profiles/{profileId}/export-storage-state': { post: { summary: 'Export saved Playwright storage state for a profile' } },
       '/v1/travel/flights/search': { post: { summary: 'Search flights' } },
       '/v1/travel/hotels/search': { post: { summary: 'Search hotels' } },
       '/v1/shopping/search': { post: { summary: 'Search shopping sites' } },

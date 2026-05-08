@@ -13,6 +13,7 @@ const envSchema = z.object({
   BROWSER_TIMEZONE: z.string().min(1).default('Asia/Kolkata'),
   BROWSER_VIEWPORT_WIDTH: z.coerce.number().int().min(320).default(1366),
   BROWSER_VIEWPORT_HEIGHT: z.coerce.number().int().min(320).default(768),
+  BROWSER_PROFILE_ROOT: z.string().min(1).default('.browseapi-profiles'),
   SESSION_TIMEOUT_MS: z.coerce.number().int().min(1000).default(600000),
   MAX_SESSIONS: z.coerce.number().int().min(1).max(50).default(10),
   API_KEYS: z.string().optional(),

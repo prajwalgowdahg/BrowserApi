@@ -55,6 +55,37 @@ describe(
       expect(artifactsRes.body.data.artifacts.length).toBeGreaterThan(0);
     });
 
+    it('v1 profile routes create, inspect, export, and delete reusable profiles', async () => {
+      const profileId = `test_profile_${Date.now()}`;
+
+      const createRes = await request(app)
+        .post('/v1/profiles')
+        .send({ profileId });
+
+      expect(createRes.status).toBe(201);
+      expect(createRes.body.data.profileId).toBe(profileId);
+
+      const sessionRes = await request(app)
+        .post('/sessions')
+        .send({ profileId });
+      const sessionId = sessionRes.body.data.sessionId;
+      const session = sessionManager.get(sessionId)!;
+      await session.context.addCookies([{ name: 'token', value: 'abc', domain: 'example.com', path: '/' }]);
+      await sessionManager.delete(sessionId);
+
+      const getRes = await request(app).get(`/v1/profiles/${profileId}`);
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.exists).toBe(true);
+
+      const exportRes = await request(app).post(`/v1/profiles/${profileId}/export-storage-state`);
+      expect(exportRes.status).toBe(200);
+      expect(exportRes.body.data.storageState.cookies[0].name).toBe('token');
+
+      const deleteRes = await request(app).delete(`/v1/profiles/${profileId}`);
+      expect(deleteRes.status).toBe(200);
+      expect(deleteRes.body.data.deleted).toBe(true);
+    });
+
     it('policy-gated tasks return needs_approval instead of bypassing sensitive steps', async () => {
       const res = await request(app)
         .post('/v1/tasks/run')
@@ -90,4 +121,3 @@ describe(
     });
   },
 );
-

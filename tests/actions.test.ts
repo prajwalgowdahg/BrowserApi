@@ -346,6 +346,112 @@ describe(
       await sessionManager.delete(sessionId);
     });
 
+    it('POST /sessions/:id/snapshot returns stable refs and ref actions use them', async () => {
+      const refHtml = `data:text/html,${encodeURIComponent(
+        '<label for="q">Search</label><input id="q" placeholder="Search products">' +
+          '<select id="size"><option>30</option><option>32</option></select>' +
+          '<button id="go" onclick="document.body.dataset.clicked = document.getElementById(\'q\').value + \'-\' + document.getElementById(\'size\').value">Go</button>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, refHtml);
+      cleanupIds.push(sessionId);
+
+      const snapshot = await request(app)
+        .post(`/sessions/${sessionId}/snapshot`)
+        .send({ limit: 20 });
+
+      expect(snapshot.status).toBe(200);
+      expect(snapshot.body.data.snapshotId).toBeDefined();
+      expect(snapshot.body.data.elements[0].ref).toMatch(/^@e/);
+      const inputRef = snapshot.body.data.elements.find((el: Record<string, unknown>) => el.tag === 'input').ref;
+      const selectRef = snapshot.body.data.elements.find((el: Record<string, unknown>) => el.tag === 'select').ref;
+      const buttonRef = snapshot.body.data.elements.find((el: Record<string, unknown>) => el.tag === 'button').ref;
+
+      await request(app).post(`/sessions/${sessionId}/fill_ref`).send({ ref: inputRef, value: 'poco' }).expect(200);
+      await request(app).post(`/sessions/${sessionId}/select_ref`).send({ ref: selectRef, value: '32' }).expect(200);
+      await request(app).post(`/sessions/${sessionId}/click_ref`).send({ ref: buttonRef }).expect(200);
+
+      const session = sessionManager.get(sessionId);
+      await expect(session!.page.locator('body').getAttribute('data-clicked')).resolves.toBe('poco-32');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/click_ref returns a recoverable error for stale refs', async () => {
+      const staleHtml = `data:text/html,${encodeURIComponent('<button id="gone">Temporary</button>')}`;
+      const { sessionId } = await createSessionAndNavigate(app, staleHtml);
+      cleanupIds.push(sessionId);
+
+      const snapshot = await request(app).post(`/sessions/${sessionId}/snapshot`).send({ limit: 10 });
+      const ref = snapshot.body.data.elements[0].ref;
+      await sessionManager.get(sessionId)!.page.locator('#gone').evaluate((el) => el.remove());
+
+      const res = await request(app).post(`/sessions/${sessionId}/click_ref`).send({ ref });
+
+      expect(res.status).toBe(500);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('Call snapshot again');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/batch executes deterministic actions and stops safely', async () => {
+      const batchHtml = `data:text/html,${encodeURIComponent(
+        '<input id="q" placeholder="Search"><button onclick="document.body.dataset.query=document.getElementById(\'q\').value">Run</button>',
+      )}`;
+      const createRes = await request(app).post('/sessions');
+      expect(createRes.status).toBe(201);
+      const sessionId = createRes.body.data.sessionId;
+      cleanupIds.push(sessionId);
+
+      const first = await request(app)
+        .post(`/sessions/${sessionId}/batch`)
+        .send({
+          screenshots: false,
+          actions: [
+            { action: 'navigate', url: batchHtml },
+            { action: 'snapshot', limit: 10 },
+          ],
+        });
+
+      expect(first.status).toBe(200);
+      expect(first.body.data.status).toBe('completed');
+      const inputRef = first.body.data.results[1].data.elements.find((el: Record<string, unknown>) => el.tag === 'input').ref;
+      const buttonRef = first.body.data.results[1].data.elements.find((el: Record<string, unknown>) => el.tag === 'button').ref;
+
+      const second = await request(app)
+        .post(`/sessions/${sessionId}/batch`)
+        .send({
+          screenshots: false,
+          actions: [
+            { action: 'fill_ref', ref: inputRef, value: 'jobs' },
+            { action: 'click_ref', ref: buttonRef },
+          ],
+        });
+
+      expect(second.status).toBe(200);
+      expect(second.body.data.status).toBe('completed');
+      await expect(sessionManager.get(sessionId)!.page.locator('body').getAttribute('data-query')).resolves.toBe('jobs');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('GET /sessions/:id/console and events expose browser debug artifacts', async () => {
+      const debugHtml = `data:text/html,${encodeURIComponent('<script>console.log("debug-ready")</script><h1>Debug</h1>')}`;
+      const { sessionId } = await createSessionAndNavigate(app, debugHtml);
+      cleanupIds.push(sessionId);
+      await sessionManager.get(sessionId)!.page.waitForTimeout(50);
+
+      const events = await request(app).get(`/sessions/${sessionId}/events`);
+      const consoleEvents = await request(app).get(`/sessions/${sessionId}/console`);
+
+      expect(events.status).toBe(200);
+      expect(events.body.data.events.some((event: Record<string, unknown>) => event.type === 'navigation')).toBe(true);
+      expect(consoleEvents.status).toBe(200);
+      expect(consoleEvents.body.data.events.some((event: Record<string, unknown>) => String(event.message).includes('debug-ready'))).toBe(true);
+
+      await sessionManager.delete(sessionId);
+    });
+
     it('POST /sessions/:id/observe falls back instead of failing when DOM APIs throw', async () => {
       const hostileHtml = `data:text/html,${encodeURIComponent(
         '<body><h1>Fallback Still Works</h1><script>document.querySelectorAll = function(){ throw new Error("blocked querySelectorAll") }</script></body>',

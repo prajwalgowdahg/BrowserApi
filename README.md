@@ -44,6 +44,7 @@ The server starts on **http://localhost:3000** by default.
 | `PORT` | `3000` | No | Server port |
 | `NODE_ENV` | `development` | No | `development`, `production`, or `test` |
 | `CHROMIUM_PATH` | auto-detect | No | Path to Chromium binary |
+| `BROWSER_PROFILE_ROOT` | `.browseapi-profiles` | No | Directory used for reusable browser profile storage state |
 | `SESSION_TIMEOUT_MS` | `600000` (10 min) | No | Session inactivity timeout in ms |
 | `MAX_SESSIONS` | `10` | No | Maximum concurrent sessions |
 | `AZURE_OPENAI_ENDPOINT` | — | For AI finding | Azure OpenAI resource endpoint URL |
@@ -134,6 +135,32 @@ curl http://localhost:3000/sessions/a1b2c3d4/logs
   }
 }
 ```
+
+#### Snapshot Refs and Debug Events
+
+For agent-style flows, prefer snapshots over selector guessing:
+
+```bash
+curl -X POST http://localhost:3000/sessions/a1b2c3d4/snapshot \
+  -H "Content-Type: application/json" \
+  -d '{"limit": 80}'
+```
+
+Snapshots return interactive elements with refs like `@e1`, `@e2`, plus text, role, label, bounding box, visibility, enabled state, and confidence. Use those refs with:
+
+- `POST /sessions/:id/click_ref`
+- `POST /sessions/:id/fill_ref`
+- `POST /sessions/:id/select_ref`
+
+Use `POST /sessions/:id/batch` to run ordered deterministic actions such as `navigate`, `snapshot`, `fill_ref`, `click_ref`, `press_key`, `wait_for`, `dismiss_overlays`, and `human_check`. The batch stops safely on human checks or approval-gated actions.
+
+Debug evidence is available while the session is active:
+
+- `GET /sessions/:id/events`
+- `GET /sessions/:id/network`
+- `GET /sessions/:id/console`
+
+Reusable browser profiles are available through `/v1/profiles` and by passing `profileId` when creating a session or running a v1 task.
 
 #### Get Current Screenshot
 

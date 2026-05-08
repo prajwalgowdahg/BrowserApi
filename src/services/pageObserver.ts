@@ -2,6 +2,7 @@ import type { Page, Locator } from 'playwright-core';
 
 export interface InteractiveElement {
   id: string;
+  ref: string;
   tag: string;
   role: string | null;
   type: string | null;
@@ -11,7 +12,11 @@ export interface InteractiveElement {
   href: string | null;
   visible: boolean;
   enabled: boolean;
+  interactable: boolean;
   box: { x: number; y: number; width: number; height: number } | null;
+  selector: string;
+  confidence: number;
+  reason: string;
 }
 
 export interface FormSummary {
@@ -155,8 +160,11 @@ const RICH_OBSERVER_SCRIPT = `
     const tag = el.tagName.toLowerCase();
     const role = el.getAttribute('role') || (tag === 'a' ? 'link' : tag === 'button' ? 'button' : null);
     el.dataset.browseapiId = 'e' + index;
+    const selector = '[data-browseapi-id="' + ('e' + index) + '"]';
+    const enabled = isEnabled(el);
     return {
       id: 'e' + index,
+      ref: '@e' + (index + 1),
       tag,
       role,
       type: el.getAttribute('type'),
@@ -165,13 +173,17 @@ const RICH_OBSERVER_SCRIPT = `
       placeholder: el.getAttribute('placeholder'),
       href: el instanceof HTMLAnchorElement ? el.href : null,
       visible,
-      enabled: isEnabled(el),
+      enabled,
+      interactable: visible && enabled,
       box: visible ? {
         x: Math.round(rect.x),
         y: Math.round(rect.y),
         width: Math.round(rect.width),
         height: Math.round(rect.height)
-      } : null
+      } : null,
+      selector,
+      confidence: visible && enabled ? 0.9 : visible ? 0.55 : 0.2,
+      reason: visible && enabled ? 'visible and enabled' : visible ? 'visible but disabled' : 'not visible'
     };
   };
   const elements = Array.from(document.querySelectorAll(interactiveSelector)).slice(0, maxElements).map(summarize);
@@ -233,6 +245,7 @@ export async function observePage(page: Page, limit = 80): Promise<PageObservati
 function normalizeElement(element: InteractiveElement): InteractiveElement {
   return {
     id: element.id,
+    ref: element.ref ?? `@${element.id}`,
     tag: element.tag,
     role: element.role,
     type: element.type,
@@ -242,7 +255,11 @@ function normalizeElement(element: InteractiveElement): InteractiveElement {
     href: element.href,
     visible: element.visible,
     enabled: element.enabled,
+    interactable: element.interactable ?? Boolean(element.visible && element.enabled),
     box: element.box,
+    selector: element.selector ?? `[data-browseapi-id="${element.id}"]`,
+    confidence: typeof element.confidence === 'number' ? element.confidence : element.visible && element.enabled ? 0.9 : 0.2,
+    reason: element.reason ?? (element.visible && element.enabled ? 'visible and enabled' : 'not interactable'),
   };
 }
 
@@ -300,3 +317,15 @@ export async function locatorForObservedId(page: Page, id: string): Promise<Loca
   return locator;
 }
 
+export async function locatorForObservedRef(page: Page, refOrId: string, elements: InteractiveElement[]): Promise<Locator> {
+  const normalizedRef = refOrId.startsWith('@') ? refOrId : `@${refOrId}`;
+  const element = elements.find((item) => item.ref === normalizedRef || item.id === refOrId || item.id === normalizedRef.slice(1));
+  if (!element) {
+    throw new Error(`Observed element ref not found: ${refOrId}. Call snapshot again.`);
+  }
+  try {
+    return await locatorForObservedId(page, element.id);
+  } catch {
+    throw new Error(`Observed element ref is stale: ${refOrId}. Call snapshot again.`);
+  }
+}
