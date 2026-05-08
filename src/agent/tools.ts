@@ -622,7 +622,11 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
         const label = el.label || el.text || el.placeholder || el.href || '';
         return `${el.id}:${el.role ?? el.tag} "${String(label).slice(0, 80)}"`;
       }).join('; ');
-      return `Observed page. URL: ${data.url}. Title: ${data.title}. Text: "${String(data.text ?? '').slice(0, 1200)}". Forms: ${forms.length}. Elements: ${elementSummary}.${ss}`;
+      const mode = data.observationMode ? ` Mode: ${data.observationMode}.` : '';
+      const diagnostics = Array.isArray(data.diagnostics) && data.diagnostics.length > 0
+        ? ` Diagnostics: ${JSON.stringify(data.diagnostics)}.`
+        : '';
+      return `Observed page.${mode}${diagnostics} URL: ${data.url}. Title: ${data.title}. Text: "${String(data.text ?? '').slice(0, 1200)}". Forms: ${forms.length}. Elements: ${elementSummary}.${ss}`;
     }
     case 'find_elements': {
       const elements = (data.elements as Array<Record<string, unknown>> | undefined) ?? [];
@@ -630,7 +634,11 @@ function summarizeResult(name: string, data: Record<string, unknown>, screenshot
         const label = el.label || el.text || el.placeholder || el.href || '';
         return `${el.id} score=${el.score} ${el.role ?? el.tag} "${String(label).slice(0, 100)}"`;
       }).join('\n');
-      return `Found ${elements.length} candidate element(s):\n${summary}${ss}`;
+      const mode = data.observationMode ? ` Observation mode: ${data.observationMode}.` : '';
+      const diagnostics = Array.isArray(data.diagnostics) && data.diagnostics.length > 0
+        ? ` Diagnostics: ${JSON.stringify(data.diagnostics)}.`
+        : '';
+      return `Found ${elements.length} candidate element(s).${mode}${diagnostics}\n${summary}${ss}`;
     }
     case 'navigate':
       return `Navigated to ${data.url}.${ss}`;

@@ -275,10 +275,10 @@ actionsRouter.post('/:sessionId/find_elements', async (req, res, next) => {
     const { query } = req.body;
     if (!query || typeof query !== 'string') return error(res, 'Missing required field: query', 400);
     const limit = Number(req.body.limit ?? 10);
-    const elements = await findRankedElements(session.page, query, Number.isFinite(limit) ? limit : 10);
+    const result = await findRankedElements(session.page, query, Number.isFinite(limit) ? limit : 10);
     const screenshot = await screenshotPage(session.page);
     actionLogService.append(sessionId, { action: 'find_elements', status: 'success', durationMs: Date.now() - startTime });
-    return success(res, { elements, screenshot });
+    return success(res, { ...result, screenshot });
   } catch (err) {
     const { sessionId } = req.params;
     actionLogService.append(sessionId, { action: 'find_elements', status: 'fail', error: (err as Error).message, durationMs: 0 });

@@ -284,7 +284,47 @@ describe(
       expect(res.body.data.text).toContain('Test Form');
       expect(Array.isArray(res.body.data.elements)).toBe(true);
       expect(Array.isArray(res.body.data.forms)).toBe(true);
+      expect(res.body.data.observationMode).toBe('rich');
       expect(typeof res.body.data.screenshot).toBe('string');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/observe does not depend on a page __name helper', async () => {
+      const helperHtml = `data:text/html,${encodeURIComponent(
+        '<h1>No runtime helper here</h1><button>Search Jobs</button><script>delete window.__name</script>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, helperHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/observe`)
+        .send({ limit: 20 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.text).toContain('No runtime helper here');
+      expect(res.body.data.observationMode).toBe('rich');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/observe captures complex forms and labels', async () => {
+      const complexHtml = `data:text/html,${encodeURIComponent(
+        '<form><label for="job">Job Search</label><input id="job" placeholder="Search jobs">' +
+          '<button type="button">Find Jobs</button></form><iframe title="frame"></iframe>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, complexHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/observe`)
+        .send({ limit: 20 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.forms).toHaveLength(1);
+      expect(res.body.data.forms[0].fields[0].label).toBe('Job Search');
+      expect(res.body.data.forms[0].buttons[0].text).toBe('Find Jobs');
 
       await sessionManager.delete(sessionId);
     });
@@ -301,6 +341,48 @@ describe(
       expect(res.body.success).toBe(true);
       expect(res.body.data.elements.length).toBeGreaterThan(0);
       expect(res.body.data.elements[0].score).toBeGreaterThan(0);
+      expect(res.body.data.observationMode).toBe('rich');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/observe falls back instead of failing when DOM APIs throw', async () => {
+      const hostileHtml = `data:text/html,${encodeURIComponent(
+        '<body><h1>Fallback Still Works</h1><script>document.querySelectorAll = function(){ throw new Error("blocked querySelectorAll") }</script></body>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, hostileHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/observe`)
+        .send({ limit: 20 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.observationMode).toBe('fallback');
+      expect(res.body.data.errorCode).toBe('OBSERVATION_FAILED');
+      expect(res.body.data.diagnostics[0]).toContain('rich observer failed');
+      expect(res.body.data.text).toContain('Fallback Still Works');
+
+      await sessionManager.delete(sessionId);
+    });
+
+    it('POST /sessions/:id/find_elements returns diagnostics when rich observation falls back', async () => {
+      const hostileHtml = `data:text/html,${encodeURIComponent(
+        '<body><h1>Fallback Candidate Page</h1><script>document.querySelectorAll = function(){ throw new Error("blocked querySelectorAll") }</script></body>',
+      )}`;
+      const { sessionId } = await createSessionAndNavigate(app, hostileHtml);
+      cleanupIds.push(sessionId);
+
+      const res = await request(app)
+        .post(`/sessions/${sessionId}/find_elements`)
+        .send({ query: 'search jobs input', limit: 5 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.elements).toEqual([]);
+      expect(res.body.data.observationMode).toBe('fallback');
+      expect(res.body.data.diagnostics).toContain('rich observer unavailable');
 
       await sessionManager.delete(sessionId);
     });
